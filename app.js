@@ -24,9 +24,10 @@
   var KINDS = {
     styrke: { label: 'Styrke', unit: 'Reps', cls: 'k1' },
     kondisjon: { label: 'Kondisjon', unit: 'Min', cls: 'k2' },
-    mobilitet: { label: 'Mobilitet', unit: 'Sek', cls: 'k3' }
+    mobilitet: { label: 'Mobilitet', unit: 'Sek', cls: 'k3' },
+    core: { label: 'Core', unit: 'Sek', cls: 'k3' }
   };
-  var VIEWS = ['uke', 'okt', 'programmer', 'fremgang'];
+  var VIEWS = ['uke', 'okt', 'programmer', 'hjemme', 'fremgang'];
 
   function defaults() {
     var ex = function (name, sets, reps, kg) { return { id: uid(), name: name, sets: sets, reps: reps, kg: kg || 0 }; };
@@ -250,9 +251,77 @@
     return h + '</div>';
   }
 
+  /* ---------- hjemmetrening ---------- */
+  var HOME_PROGRAMS = [
+    { name: 'Hel kropp hjemme', kind: 'styrke', min: 30, ex: [['Knebøy', 3, 15, 0], ['Armhevinger', 3, 10, 0], ['Utfall', 3, 12, 0], ['Bekkenløft', 3, 15, 0], ['Superman', 3, 12, 0]] },
+    { name: 'Overkropp hjemme', kind: 'styrke', min: 25, ex: [['Armhevinger', 4, 10, 0], ['Diamant-armhevinger', 3, 8, 0], ['Dips på stol', 3, 12, 0], ['Pike-armhevinger', 3, 8, 0]] },
+    { name: 'Ben og rumpe hjemme', kind: 'styrke', min: 30, ex: [['Knebøy', 4, 15, 0], ['Bulgarsk utfall', 3, 10, 0], ['Bekkenløft', 3, 15, 0], ['Tåhev', 3, 20, 0]] },
+    { name: 'Core hjemme', kind: 'core', min: 15, ex: [['Planke', 3, 40, 0], ['Sideplanke', 3, 30, 0], ['Dødbille', 3, 30, 0], ['Bird dog', 3, 30, 0]] },
+    { name: 'Intervaller hjemme', kind: 'kondisjon', min: 25, ex: [['Rolig oppvarming', 1, 5, 0], ['Jumping jacks', 3, 2, 0], ['Høye knær', 3, 2, 0], ['Burpees', 3, 1, 0], ['Rolig nedkjøling', 1, 5, 0]] },
+    { name: 'Mobilitet hjemme', kind: 'mobilitet', min: 10, ex: [['Katt-ku', 2, 45, 0], ['Hoftebøyer-strekk', 2, 45, 0], ['Hamstring-strekk', 2, 45, 0]] }
+  ];
+  var LEVELS = { 1: 'Nybegynner', 2: 'Middels', 3: 'Krevende' };
+  var HOME_GROUPS = ['Overkropp', 'Ben', 'Core', 'Kondisjon', 'Mobilitet'];
+  var HOME_LIB = [
+    ['Armhevinger', 'Overkropp', 1, 'Hendene litt bredere enn skuldrene, kroppen i rett linje. Senk brystet mot gulvet. Knærne i gulvet gjør den lettere.'],
+    ['Diamant-armhevinger', 'Overkropp', 2, 'Hendene tett sammen under brystet og albuene inn mot kroppen. Tar hardere på baksiden av armene.'],
+    ['Dips på stol', 'Overkropp', 2, 'Hendene på kanten av en stabil stol. Senk hoftene rett ned til albuene er bøyd omtrent 90 grader.'],
+    ['Pike-armhevinger', 'Overkropp', 3, 'Hoftene høyt i en omvendt V. Senk hodet mot gulvet og press deg opp igjen. Trener skuldrene.'],
+    ['Knebøy', 'Ben', 1, 'Føttene i skulderbredde. Skyv hoftene bakover og ned, og la knærne følge tærne.'],
+    ['Utfall', 'Ben', 1, 'Ta et langt steg frem og senk det bakre kneet mot gulvet. Press opp med den fremre hælen.'],
+    ['Bulgarsk utfall', 'Ben', 2, 'Den bakre foten hviler på en stol eller sofa. Senk deg rett ned på det fremre beinet.'],
+    ['Bekkenløft', 'Ben', 1, 'Ligg på ryggen med bøyde knær. Løft hoftene til kroppen er rett fra skuldre til knær, og klem rumpa.'],
+    ['Tåhev', 'Ben', 1, 'Stå på kanten av en trapp og hev hælene så høyt du kan. Senk rolig ned igjen.'],
+    ['Vegg-sitt', 'Ben', 1, 'Ryggen mot veggen og lårene parallelt med gulvet. Hold posisjonen.'],
+    ['Planke', 'Core', 1, 'Albuene under skuldrene og kroppen i en rett linje. Stram mage og rumpe.'],
+    ['Sideplanke', 'Core', 2, 'Støtt deg på en albue og løft hoftene. Hold kroppen rett fra hode til føtter.'],
+    ['Dødbille', 'Core', 1, 'Ligg på ryggen med armer og bein i været. Senk motsatt arm og bein mot gulvet uten at korsryggen løfter seg.'],
+    ['Bird dog', 'Core', 1, 'På alle fire. Strekk motsatt arm og bein ut og hold hoftene i ro.'],
+    ['Superman', 'Core', 1, 'Ligg på magen. Løft armer og bein samtidig og hold i ett sekund.'],
+    ['Jumping jacks', 'Kondisjon', 1, 'Hopp bena ut til siden og armene over hodet, og tilbake igjen i jevn rytme.'],
+    ['Høye knær', 'Kondisjon', 1, 'Løp på stedet og løft knærne opp til hoftehøyde.'],
+    ['Burpees', 'Kondisjon', 3, 'Ned i armhevingsposisjon, hopp føttene inn og hopp opp med armene over hodet.'],
+    ['Katt-ku', 'Mobilitet', 1, 'På alle fire. Rund og svai ryggen i rolig tempo sammen med pusten.'],
+    ['Hoftebøyer-strekk', 'Mobilitet', 1, 'I utfallsposisjon med bakre kne i gulvet. Skyv hoftene forsiktig fremover.'],
+    ['Hamstring-strekk', 'Mobilitet', 1, 'Sittende med ett bein strukket frem. Len deg frem fra hoftene med rett rygg.']
+  ];
+  var homeFilter = 'Alle';
+  function homeProgram(i) {
+    var h = HOME_PROGRAMS[i];
+    var have = state.programs.filter(function (p) { return p.name === h.name; })[0];
+    if (have) return have;
+    var p = { id: uid(), name: h.name, kind: h.kind, exercises: h.ex.map(function (e) { return { id: uid(), name: e[0], sets: e[1], reps: e[2], kg: e[3] }; }) };
+    state.programs.push(p);
+    save();
+    return p;
+  }
+  function viewHjemme() {
+    var h = '<div class="sec-head"><div><h2>Hjemmetrening</h2><p class="sub">Ingen utstyr nødvendig, bare gulvplass og en stabil stol. Start en økt med en gang, eller legg den til i programmene dine.</p></div></div>';
+    h += '<h3 class="subhead">Ferdige økter</h3><div class="homegrid">';
+    HOME_PROGRAMS.forEach(function (hp, i) {
+      var added = state.programs.some(function (p) { return p.name === hp.name; });
+      h += '<article class="panel homecard"><div><div class="pn">' + esc(hp.name) + '</div>' + kindTag(hp.kind) + ' <span class="sub">· ca ' + hp.min + ' min</span></div>' +
+        '<p class="sub">' + hp.ex.map(function (e) { return esc(e[0]); }).join(' · ') + '</p>' +
+        '<div class="row-actions"><button class="btn btn-primary btn-sm" data-act="home-start" data-i="' + i + '">Start nå</button>' +
+        '<button class="btn btn-sm" data-act="home-add" data-i="' + i + '"' + (added ? ' disabled' : '') + '>' + (added ? '✓ I programmene' : 'Legg til i programmer') + '</button></div></article>';
+    });
+    h += '</div><h3 class="subhead">Øvelsesbibliotek</h3><div class="chips" role="group" aria-label="Filtrer øvelser">';
+    ['Alle'].concat(HOME_GROUPS).forEach(function (g) {
+      h += '<button class="chip" data-act="hf" data-k="' + esc(g) + '" aria-pressed="' + (g === homeFilter) + '">' + g + '</button>';
+    });
+    h += '</div><div class="libgrid">';
+    HOME_LIB.filter(function (x) { return homeFilter === 'Alle' || x[1] === homeFilter; }).forEach(function (x) {
+      var pips = '';
+      for (var i = 1; i <= 3; i++) pips += '<i' + (i <= x[2] ? ' class="on"' : '') + '></i>';
+      h += '<article class="panel libcard"><div class="lib-top"><h4>' + esc(x[0]) + '</h4><span class="lvl" title="Nivå: ' + LEVELS[x[2]] + '">' + pips + '</span></div>' +
+        '<div class="sub">' + esc(x[1]) + ' · ' + LEVELS[x[2]] + '</div><p>' + esc(x[3]) + '</p></article>';
+    });
+    return h + '</div>';
+  }
+
   /* ---------- render + routing ---------- */
   function render() {
-    var fn = { uke: viewUke, okt: viewOkt, programmer: viewProg, fremgang: viewFrem }[view];
+    var fn = { uke: viewUke, okt: viewOkt, programmer: viewProg, hjemme: viewHjemme, fremgang: viewFrem }[view];
     $('#app').innerHTML = fn();
     document.querySelectorAll('.nav a').forEach(function (a) {
       if (a.dataset.v === view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
@@ -386,6 +455,11 @@
         armed = ''; sess = null; saveDraft(); stopRest(); render(); break;
       case 'rest': startRest(Number(t.dataset.s)); break;
       case 'rest-stop': stopRest(); break;
+      case 'hf': homeFilter = t.dataset.k; render(); break;
+      case 'home-add': homeProgram(+t.dataset.i); render(); break;
+      case 'home-start':
+        if (sess) { go('okt'); break; }
+        startSession(homeProgram(+t.dataset.i).id); break;
       case 'add-prog':
         state.programs.push({ id: uid(), name: 'Nytt program', kind: 'styrke', exercises: [{ id: uid(), name: 'Ny øvelse', sets: 3, reps: 10, kg: 0 }] });
         save(); render(); break;

@@ -67,9 +67,9 @@ button, input, select { font: inherit; color: inherit; }
 .mark::after { top: 15px; }
 .brand h1 { font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: .03em; text-transform: uppercase; line-height: 1; }
 .sync { font-size: 13px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; background: var(--surface); }
-.nav { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line); }
+.nav { display: flex; overflow-x: auto; scrollbar-width: thin; border-bottom: 1px solid var(--line); }
 .nav a {
-  text-align: center; text-decoration: none; padding: 10px 4px; color: var(--muted);
+  flex: 1 0 auto; text-align: center; text-decoration: none; padding: 10px 14px; color: var(--muted);
   font-family: var(--font-display); font-weight: 600; font-size: 19px; letter-spacing: .04em; text-transform: uppercase;
   border-bottom: 3px solid transparent; margin-bottom: -1px;
 }
@@ -223,3 +223,18 @@ select.inp { background: var(--surface); }
 @media (max-width: 520px) { .hrow { grid-template-columns: minmax(0, 1fr) auto; } .hrow .d { grid-column: 1 / -1; } }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Hjemmetrening */
+.subhead { font-family: var(--font-display); font-weight: 700; font-size: 26px; text-transform: uppercase; letter-spacing: .02em; margin-top: 8px; }
+.homegrid, .libgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 10px; }
+.homecard { display: flex; flex-direction: column; gap: 10px; justify-content: space-between; }
+.homecard .pn { font-weight: 600; font-size: 19px; overflow-wrap: anywhere; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.libcard { display: flex; flex-direction: column; gap: 6px; }
+.libcard p { font-size: 15px; }
+.lib-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.lib-top h4 { margin: 0; font-size: 18px; font-weight: 600; overflow-wrap: anywhere; }
+.lvl { display: inline-flex; gap: 3px; flex: none; }
+.lvl i { width: 8px; height: 14px; border-radius: 2px; background: var(--line); display: inline-block; }
+.lvl i.on { background: var(--accent); }
+.btn[disabled] { opacity: .6; cursor: default; }
