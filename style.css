@@ -247,3 +247,15 @@ select.inp { background: var(--surface); }
 /* Utseendevelger */
 .top-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .theme-sel { min-height: 34px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 13px; }
+
+/* Innlogging */
+.auth { min-height: 80vh; display: grid; place-items: center; }
+.auth-box { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 18px; }
+.auth-card { display: flex; flex-direction: column; gap: 14px; }
+.auth-card h2 { font-family: var(--font-display); font-weight: 700; font-size: 30px; text-transform: uppercase; letter-spacing: .02em; }
+.auth-card form { display: flex; flex-direction: column; gap: 6px; }
+.auth-card label { font-size: 14px; color: var(--muted); margin-top: 6px; }
+.auth-card .msg { min-height: 1.4em; margin: 4px 0; }
+.msg.ok { color: var(--ok); }
+.auth-links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.linkbtn { background: none; border: 0; padding: 6px 0; color: var(--accent); cursor: pointer; text-decoration: underline; font-size: 14px; }

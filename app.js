@@ -541,6 +541,115 @@
   document.addEventListener('input', onField);
   document.addEventListener('change', onField);
 
+  /* ---------- innlogging (Firebase) ---------- */
+  // Innloggingen slås på når firebase-config.js inneholder en konfigurasjon.
+  var authMode = !!(window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey);
+  var FB_URL = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  var auth = null, fsdb = null, signUp = false;
+  var AUTH_ERR = {
+    'auth/invalid-email': 'Ugyldig e-postadresse.',
+    'auth/missing-password': 'Skriv inn passordet.',
+    'auth/weak-password': 'Passordet må ha minst 6 tegn.',
+    'auth/email-already-in-use': 'Det finnes allerede en konto med denne e-posten. Logg inn i stedet.',
+    'auth/invalid-credential': 'Feil e-post eller passord.',
+    'auth/wrong-password': 'Feil e-post eller passord.',
+    'auth/user-not-found': 'Feil e-post eller passord.',
+    'auth/too-many-requests': 'For mange forsøk. Vent litt og prøv igjen.',
+    'auth/network-request-failed': 'Ingen nettverk. Sjekk tilkoblingen og prøv igjen.',
+    'auth/operation-not-allowed': 'E-postinnlogging er ikke slått på i Firebase ennå.',
+    other: 'Noe gikk galt. Prøv igjen.'
+  };
+  function byId(i) { return document.getElementById(i); }
+  function authMsg(m, ok) { var el = byId('auth-msg'); el.textContent = m || ''; el.className = 'msg' + (ok ? ' ok' : ''); }
+  function showAuth() { document.querySelector('.wrap').hidden = true; byId('auth').hidden = false; }
+  function showApp() { byId('auth').hidden = true; document.querySelector('.wrap').hidden = false; }
+  function loadScript(src, ok, fail) {
+    var s = document.createElement('script');
+    s.src = src; s.onload = ok; s.onerror = fail;
+    document.head.appendChild(s);
+  }
+  function startAuth() {
+    showAuth();
+    var files = ['firebase-app-compat.js', 'firebase-auth-compat.js', 'firebase-firestore-compat.js'];
+    (function next(i) {
+      if (i === files.length) { initAuth(); return; }
+      loadScript(FB_URL + files[i], function () { next(i + 1); }, function () {
+        byId('auth-load').textContent = 'Kunne ikke laste innloggingen. Sjekk nettverket og last siden på nytt.';
+      });
+    })(0);
+  }
+  function initAuth() {
+    firebase.initializeApp(window.FIREBASE_CONFIG);
+    auth = firebase.auth();
+    fsdb = firebase.firestore();
+
+    byId('auth-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      authMsg('');
+      var em = byId('auth-email').value.trim(), pw = byId('auth-pass').value;
+      if (!em || !pw) { authMsg('Fyll inn e-post og passord.'); return; }
+      var btn = byId('auth-submit');
+      btn.disabled = true;
+      var p = signUp ? auth.createUserWithEmailAndPassword(em, pw) : auth.signInWithEmailAndPassword(em, pw);
+      p.then(function () { byId('auth-pass').value = ''; }, function (err) {
+        authMsg(AUTH_ERR[err && err.code] || AUTH_ERR.other);
+      }).then(function () { btn.disabled = false; });
+    });
+    byId('auth-toggle').addEventListener('click', function () {
+      signUp = !signUp;
+      byId('auth-title').textContent = signUp ? 'Opprett konto' : 'Logg inn';
+      byId('auth-submit').textContent = signUp ? 'Opprett konto' : 'Logg inn';
+      byId('auth-toggle').textContent = signUp ? 'Har du konto? Logg inn' : 'Ny her? Opprett konto';
+      byId('auth-pass').setAttribute('autocomplete', signUp ? 'new-password' : 'current-password');
+      authMsg('');
+    });
+    byId('auth-reset').addEventListener('click', function () {
+      var em = byId('auth-email').value.trim();
+      if (!em) { authMsg('Skriv inn e-postadressen din først.'); return; }
+      auth.sendPasswordResetEmail(em).then(function () {
+        authMsg('Hvis adressen har en konto, er det sendt en lenke for å lage nytt passord.', true);
+      }, function (err) { authMsg(AUTH_ERR[err && err.code] || AUTH_ERR.other); });
+    });
+    byId('logout').addEventListener('click', function () {
+      try { localStorage.removeItem('tb_state'); localStorage.removeItem('tb_sess'); localStorage.removeItem('tb_owner'); } catch (e) { }
+      sess = null; ref = null; clearTimeout(saveT); stopRest();
+      state = normalize(defaults());   // ingen data skal følge med til neste bruker
+      auth.signOut();
+    });
+    auth.onAuthStateChanged(function (u) { if (u) signedIn(u); else signedOut(); });
+  }
+  function signedOut() {
+    ref = null;
+    byId('logout').hidden = true;
+    byId('auth-load').hidden = true;
+    byId('auth-card').hidden = false;
+    showAuth();
+  }
+  function signedIn(u) {
+    byId('auth-card').hidden = true;
+    byId('auth-load').hidden = false;
+    byId('auth-load').textContent = 'Laster dataene dine …';
+    var docRef = fsdb.doc('users/' + u.uid);
+    docRef.get().then(function (snap) {
+      var owner = null;
+      try { owner = localStorage.getItem('tb_owner'); } catch (e) { }
+      var foreign = !!owner && owner !== u.uid;       // lokale data tilhører en annen konto
+      if (foreign) { sess = null; saveDraft(); }
+      if (snap.exists) state = normalize(JSON.parse(JSON.stringify(snap.data())));
+      else if (foreign) state = normalize(defaults());
+      // ellers: ny konto uten skydata, så dataene fra denne enheten tas med
+      ref = docRef;
+      try { localStorage.setItem('tb_owner', u.uid); localStorage.setItem('tb_state', JSON.stringify(state)); } catch (e) { }
+      var out = byId('logout');
+      out.hidden = false; out.title = u.email || '';
+      showApp();
+      route();
+      if (snap.exists) setSync('saved'); else save();
+    }, function () {
+      byId('auth-load').textContent = 'Kunne ikke hente dataene dine. Last siden på nytt.';
+    });
+  }
+
   /* ---------- boot ---------- */
   var themeSel = document.querySelector('#theme');
   themeSel.value = savedTheme;
@@ -548,7 +657,8 @@
 
   route();
   setSync('loading');
-  (function connect() {
+  if (authMode) startAuth();
+  else (function connect() {
     if (!window.claude || !window.claude.use) { setSync('local'); return; }
     Promise.all([window.claude.use('db'), window.claude.use('user')]).then(function (r) {
       var dbm = r[0], user = r[1];

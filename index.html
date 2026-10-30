@@ -7,9 +7,30 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
+<section id="auth" class="auth" hidden>
+  <div class="auth-box">
+    <div class="brand"><span class="mark" aria-hidden="true"></span><h1>Treningsbok</h1></div>
+    <p id="auth-load" class="sub">Laster …</p>
+    <div id="auth-card" class="panel auth-card" hidden>
+      <h2 id="auth-title">Logg inn</h2>
+      <form id="auth-form" novalidate>
+        <label for="auth-email">E-post</label>
+        <input id="auth-email" class="inp" type="email" autocomplete="email" inputmode="email">
+        <label for="auth-pass">Passord</label>
+        <input id="auth-pass" class="inp" type="password" autocomplete="current-password">
+        <p id="auth-msg" class="msg" role="alert"></p>
+        <button id="auth-submit" class="btn btn-primary" type="submit">Logg inn</button>
+      </form>
+      <div class="auth-links">
+        <button id="auth-toggle" class="linkbtn" type="button">Ny her? Opprett konto</button>
+        <button id="auth-reset" class="linkbtn" type="button">Glemt passord?</button>
+      </div>
+    </div>
+  </div>
+</section>
 <div class="wrap">
   <header class="top">
     <div class="brand"><span class="mark" aria-hidden="true"></span><h1>Treningsbok</h1></div>
@@ -20,6 +41,7 @@
         <option value="dark">Mørk</option>
       </select>
       <span id="sync" class="sync" role="status">Henter …</span>
+      <button id="logout" class="btn btn-sm" hidden>Logg ut</button>
     </div>
   </header>
   <nav class="nav" aria-label="Hovedmeny">
@@ -44,6 +66,7 @@
   </div>
 </div>
 
-<script src="app.js?v=2"></script>
+<script src="firebase-config.js?v=1"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
