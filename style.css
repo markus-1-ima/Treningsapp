@@ -67,7 +67,7 @@ button, input, select { font: inherit; color: inherit; }
 .mark::after { top: 15px; }
 .brand h1 { font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: .03em; text-transform: uppercase; line-height: 1; }
 .sync { font-size: 13px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; background: var(--surface); }
-.nav { display: flex; overflow-x: auto; scrollbar-width: thin; border-bottom: 1px solid var(--line); }
+.nav { display: flex; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; border-bottom: 1px solid var(--line); }
 .nav a {
   flex: 1 0 auto; text-align: center; text-decoration: none; padding: 10px 14px; color: var(--muted);
   font-family: var(--font-display); font-weight: 600; font-size: 19px; letter-spacing: .04em; text-transform: uppercase;
