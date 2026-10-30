@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Treningsbok</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><span class="mark" aria-hidden="true"></span><h1>Treningsbok</h1></div>
+    <span id="sync" class="sync" role="status">Henter …</span>
+  </header>
+  <nav class="nav" aria-label="Hovedmeny">
+    <a href="#uke" data-v="uke">Uke</a>
+    <a href="#okt" data-v="okt">Økt</a>
+    <a href="#programmer" data-v="programmer">Programmer</a>
+    <a href="#hjemme" data-v="hjemme">Hjemme</a>
+    <a href="#fremgang" data-v="fremgang">Fremgang</a>
+  </nav>
+  <main id="app"></main>
+</div>
+
+<div id="restbar" hidden>
+  <div class="rest-in">
+    <div class="rest-read"><span class="rest-lab">Hvile</span><span id="rest-time" class="rest-time tnum">1:30</span></div>
+    <div class="rest-chips" role="group" aria-label="Hviletid">
+      <button class="chip" data-act="rest" data-s="60" aria-pressed="false">1:00</button>
+      <button class="chip" data-act="rest" data-s="90" aria-pressed="false">1:30</button>
+      <button class="chip" data-act="rest" data-s="120" aria-pressed="false">2:00</button>
+      <button class="chip" data-act="rest-stop">Stopp</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
