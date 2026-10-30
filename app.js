@@ -35,19 +35,27 @@
     var p2 = { id: uid(), name: 'Underkropp', kind: 'styrke', exercises: [ex('Knebøy', 4, 6, 80), ex('Rumensk markløft', 3, 8, 70), ex('Utfall', 3, 10, 20), ex('Tåhev', 3, 15, 40)] };
     var p3 = { id: uid(), name: 'Intervaller', kind: 'kondisjon', exercises: [ex('Rolig oppvarming', 1, 10), ex('Hard intervall', 4, 4), ex('Nedjogg', 1, 10)] };
     var p4 = { id: uid(), name: 'Mobilitet', kind: 'mobilitet', exercises: [ex('Hoftebøyer-strekk', 2, 45), ex('Brystrygg-rotasjon', 2, 30), ex('Hamstring-strekk', 2, 45)] };
-    return { programs: [p1, p2, p3, p4], week: [p1.id, null, p2.id, null, p3.id, p4.id, null], goal: 4, last: {}, rest: 90, log: [], hint: true };
+    return { programs: [p1, p2, p3, p4], plans: { a: { week: [p1.id, null, p2.id, null, p3.id, p4.id, null], goal: 4 }, h: { week: [null, null, null, null, null, null, null], goal: 4 } }, active: 'a', last: {}, rest: 90, log: [], hint: true };
   }
   function normalize(s) {
     s.programs = Array.isArray(s.programs) ? s.programs : [];
-    s.week = (Array.isArray(s.week) && s.week.length === 7) ? s.week : [null, null, null, null, null, null, null];
+    var emptyWeek = function () { return [null, null, null, null, null, null, null]; };
+    var okWeek = function (w) { return (Array.isArray(w) && w.length === 7) ? w : emptyWeek(); };
+    if (!s.plans) s.plans = { a: { week: okWeek(s.week), goal: s.goal > 0 ? s.goal : 3 }, h: { week: emptyWeek(), goal: 4 } };
+    ['a', 'h'].forEach(function (k) {
+      var pl = s.plans[k] || {};
+      s.plans[k] = { week: okWeek(pl.week), goal: pl.goal > 0 ? pl.goal : (k === 'a' ? 3 : 4) };
+    });
+    delete s.week; delete s.goal;
+    s.active = s.active === 'h' ? 'h' : 'a';
     s.log = Array.isArray(s.log) ? s.log : [];
-    s.goal = s.goal > 0 ? s.goal : 3;
     s.last = s.last || {};
     s.rest = s.rest || 90;
     return s;
   }
 
   var state = null;
+  function curPlan() { return state.plans[state.active]; }
   try { var raw = localStorage.getItem('tb_state'); if (raw) state = JSON.parse(raw); } catch (e) { }
   state = normalize(state || defaults());
   var sess = null;
@@ -99,18 +107,23 @@
     var doneN = state.log.filter(function (l) { return isos.indexOf(l.d) > -1; }).length;
     var todayIso = iso(new Date());
     var segs = '';
-    var cap = Math.min(state.goal, 14);
+    var cap = Math.min(curPlan().goal, 14);
     for (var i = 0; i < cap; i++) segs += '<span class="seg' + (i < doneN ? ' on' : '') + '"></span>';
     var h = '<div class="sec-head"><div><h2>Uke ' + isoWeek(mon) + '</h2><p class="sub">' + dateLabel(days[0]) + ' – ' + dateLabel(days[6]) + ' · planen gjentas hver uke</p></div>' +
       '<div class="weeknav"><button class="btn btn-sm" data-act="wk-prev" aria-label="Forrige uke">←</button>' +
       '<button class="btn btn-sm" data-act="wk-now"' + (weekOffset === 0 ? ' disabled' : '') + '>Denne uka</button>' +
       '<button class="btn btn-sm" data-act="wk-next" aria-label="Neste uke">→</button></div></div>';
+    h += '<div class="planswitch" role="group" aria-label="Velg ukeplan">' +
+      [['a', 'Vanlig uke'], ['h', 'Hjemmeuke']].map(function (x) { return '<button class="btn" data-act="plan-sw" data-k="' + x[0] + '" aria-pressed="' + (state.active === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</div>';
+    if (state.active === 'h' && curPlan().week.every(function (x) { return !x; })) {
+      h += '<div class="hint"><span>Hjemmeuka er tom. Velg program per dag, eller fyll den med et forslag av hjemmeøkter.</span><button class="btn btn-sm btn-primary" data-act="home-fill">Fyll med forslag</button></div>';
+    }
     h += hintBox();
-    h += '<div class="panel goalbar"><div class="txt tnum">' + doneN + ' av ' + state.goal + ' økter</div><div class="meter" aria-hidden="true">' + segs + '</div>' +
-      '<div class="stepper">Ukemål <button class="btn btn-sm" data-act="goal-dec" aria-label="Senk ukemål">−</button><b class="tnum">' + state.goal + '</b><button class="btn btn-sm" data-act="goal-inc" aria-label="Øk ukemål">+</button></div></div>';
+    h += '<div class="panel goalbar"><div class="txt tnum">' + doneN + ' av ' + curPlan().goal + ' økter</div><div class="meter" aria-hidden="true">' + segs + '</div>' +
+      '<div class="stepper">Ukemål <button class="btn btn-sm" data-act="goal-dec" aria-label="Senk ukemål">−</button><b class="tnum">' + curPlan().goal + '</b><button class="btn btn-sm" data-act="goal-inc" aria-label="Øk ukemål">+</button></div></div>';
     h += '<div class="week">';
     days.forEach(function (d, i) {
-      var pid = state.week[i], prog = pid ? P(pid) : null;
+      var pid = curPlan().week[i], prog = pid ? P(pid) : null;
       var isToday = isos[i] === todayIso;
       var done = state.log.filter(function (l) { return l.d === isos[i]; });
       var body = '';
@@ -140,7 +153,7 @@
 
   function viewOkt() {
     if (!sess) {
-      var plannedId = state.week[todayIdx()];
+      var plannedId = curPlan().week[todayIdx()];
       var h = '<div class="sec-head"><div><h2>Start en økt</h2><p class="sub">Velg et program. Vekter og reps fylles inn fra forrige gang.</p></div></div>';
       if (!state.programs.length) return h + '<p class="empty">Du har ingen programmer ennå. Lag ett under Programmer.</p>';
       h += '<div class="sess-list">';
@@ -194,7 +207,7 @@
     var mon0 = startOfWeek(new Date()), weeks = [], idx = {}, i;
     for (i = 7; i >= 0; i--) { var m = addDays(mon0, -7 * i); idx[iso(m)] = weeks.length; weeks.push({ m: m, n: 0 }); }
     state.log.forEach(function (l) { var k = iso(startOfWeek(parseIso(l.d))); if (k in idx) weeks[idx[k]].n++; });
-    var max = Math.max(state.goal, 1);
+    var max = Math.max(curPlan().goal, 1);
     weeks.forEach(function (w) { if (w.n > max) max = w.n; });
     var W = 640, H = 230, L = 30, R = 56, T = 22, B = 34;
     var cw = (W - L - R) / weeks.length, bw = cw * 0.56;
@@ -209,7 +222,7 @@
       if (w.n > 0) s += '<rect class="bar' + (k === weeks.length - 1 ? ' now' : '') + '" x="' + x + '" y="' + y(w.n) + '" width="' + bw + '" height="' + hgt + '" rx="3" fill="currentColor"/><text class="val" x="' + (x + bw / 2) + '" y="' + (y(w.n) - 6) + '" text-anchor="middle">' + w.n + '</text>';
       s += '<text x="' + (x + bw / 2) + '" y="' + (H - 12) + '" text-anchor="middle">u' + isoWeek(w.m) + '</text>';
     });
-    s += '<line class="goal" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(state.goal) + '" y2="' + y(state.goal) + '"/><text class="goaltxt" x="' + (W - R + 6) + '" y="' + (y(state.goal) + 4) + '">Mål ' + state.goal + '</text><'+'/svg>';
+    s += '<line class="goal" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(curPlan().goal) + '" y2="' + y(curPlan().goal) + '"/><text class="goaltxt" x="' + (W - R + 6) + '" y="' + (y(curPlan().goal) + 4) + '">Mål ' + curPlan().goal + '</text><'+'/svg>';
     return s;
   }
 
@@ -219,8 +232,8 @@
     var mon = startOfWeek(new Date()), st = 0;
     for (var i = 0; i < 200; i++) {
       var c = counts[iso(addDays(mon, -7 * i))] || 0;
-      if (i === 0 && c < state.goal) continue;
-      if (c >= state.goal) st++; else break;
+      if (i === 0 && c < curPlan().goal) continue;
+      if (c >= curPlan().goal) st++; else break;
     }
     return st;
   }
@@ -429,8 +442,8 @@
       case 'wk-prev': weekOffset--; render(); break;
       case 'wk-next': weekOffset++; render(); break;
       case 'wk-now': weekOffset = 0; render(); break;
-      case 'goal-dec': if (state.goal > 1) { state.goal--; save(); render(); } break;
-      case 'goal-inc': if (state.goal < 14) { state.goal++; save(); render(); } break;
+      case 'goal-dec': if (curPlan().goal > 1) { curPlan().goal--; save(); render(); } break;
+      case 'goal-inc': if (curPlan().goal < 14) { curPlan().goal++; save(); render(); } break;
       case 'hint-x': state.hint = false; save(); render(); break;
       case 'start':
         if (sess && sess.pid !== t.dataset.p) { go('okt'); break; }
@@ -455,6 +468,12 @@
         armed = ''; sess = null; saveDraft(); stopRest(); render(); break;
       case 'rest': startRest(Number(t.dataset.s)); break;
       case 'rest-stop': stopRest(); break;
+      case 'plan-sw': state.active = t.dataset.k === 'h' ? 'h' : 'a'; save(); render(); break;
+      case 'home-fill': {
+        var sug = [0, 4, null, 1, 2, 3, 5];
+        state.plans.h.week = sug.map(function (i) { return i === null ? null : homeProgram(i).id; });
+        save(); render(); break;
+      }
       case 'hf': homeFilter = t.dataset.k; render(); break;
       case 'home-add': homeProgram(+t.dataset.i); render(); break;
       case 'home-start':
@@ -474,7 +493,9 @@
         if (armed !== key) { armed = key; render(); break; }
         armed = '';
         state.programs = state.programs.filter(function (x) { return x.id !== t.dataset.p; });
-        state.week = state.week.map(function (x) { return x === t.dataset.p ? null : x; });
+        ['a', 'h'].forEach(function (k) {
+          state.plans[k].week = state.plans[k].week.map(function (x) { return x === t.dataset.p ? null : x; });
+        });
         save(); render(); break;
       }
       case 'del-log': {
@@ -495,7 +516,7 @@
     var p = t.dataset.p ? P(t.dataset.p) : null, ex;
     if (p && t.dataset.e) ex = p.exercises.filter(function (x) { return x.id === t.dataset.e; })[0];
     switch (f) {
-      case 'plan': state.week[+t.dataset.i] = t.value || null; save(); render(); break;
+      case 'plan': curPlan().week[+t.dataset.i] = t.value || null; save(); render(); break;
       case 'pname': if (p) { p.name = t.value; save(); } break;
       case 'pkind': if (p) { p.kind = t.value; save(); render(); } break;
       case 'en': if (ex) { ex.name = t.value; save(); } break;

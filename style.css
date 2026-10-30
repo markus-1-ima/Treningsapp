@@ -238,3 +238,8 @@ select.inp { background: var(--surface); }
 .lvl i { width: 8px; height: 14px; border-radius: 2px; background: var(--line); display: inline-block; }
 .lvl i.on { background: var(--accent); }
 .btn[disabled] { opacity: .6; cursor: default; }
+
+/* Bytte mellom ukeplaner */
+.planswitch { display: inline-flex; align-self: flex-start; max-width: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 3px; gap: 3px; }
+.planswitch .btn { border: 0; background: transparent; min-height: 38px; }
+.planswitch .btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
