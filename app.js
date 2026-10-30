@@ -595,6 +595,7 @@
         authMsg(AUTH_ERR[err && err.code] || AUTH_ERR.other);
       }).then(function () { btn.disabled = false; });
     });
+    byId('auth-retry').addEventListener('click', function () { location.reload(); });
     byId('auth-toggle').addEventListener('click', function () {
       signUp = !signUp;
       byId('auth-title').textContent = signUp ? 'Opprett konto' : 'Logg inn';
@@ -645,8 +646,13 @@
       showApp();
       route();
       if (snap.exists) setSync('saved'); else save();
-    }, function () {
-      byId('auth-load').textContent = 'Kunne ikke hente dataene dine. Last siden på nytt.';
+    }, function (err) {
+      var code = (err && err.code) || 'ukjent';
+      var why = 'Kunne ikke hente dataene dine.';
+      if (code === 'permission-denied') why = 'Ingen tilgang til databasen. Sjekk at Firestore-reglene er publisert.';
+      else if (code === 'unavailable' || code === 'failed-precondition' || code === 'not-found') why = 'Fant ikke databasen, eller du er frakoblet. Sjekk at Firestore Database er opprettet i Firebase-prosjektet.';
+      byId('auth-load').textContent = why + ' (' + code + ')';
+      byId('auth-retry').hidden = false;
     });
   }
 
