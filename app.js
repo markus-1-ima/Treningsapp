@@ -1,5 +1,16 @@
 (function () {
   'use strict';
+
+  /* ---------- utseende (lys/mørk) ---------- */
+  function setTheme(t) {                     // 'auto' | 'light' | 'dark'
+    var root = document.documentElement;
+    if (t === 'light' || t === 'dark') root.setAttribute('data-theme', t);
+    else root.removeAttribute('data-theme');
+    try { localStorage.setItem('tb_theme', t); } catch (e) { }
+  }
+  var savedTheme = 'auto';
+  try { savedTheme = localStorage.getItem('tb_theme') || 'auto'; } catch (e) { }
+  setTheme(savedTheme);
   var $ = function (s) { return document.querySelector(s); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var uid = function () { return Math.random().toString(36).slice(2, 9); };
@@ -531,6 +542,10 @@
   document.addEventListener('change', onField);
 
   /* ---------- boot ---------- */
+  var themeSel = document.querySelector('#theme');
+  themeSel.value = savedTheme;
+  themeSel.addEventListener('change', function () { setTheme(themeSel.value); });
+
   route();
   setSync('loading');
   (function connect() {
