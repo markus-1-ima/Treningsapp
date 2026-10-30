@@ -11,14 +11,14 @@ body { margin: 0; }
   --ink: #111b26;
   --muted: #5b6b7b;
   --line: #d5dbe3;
-  --accent: #1f4fd8;
+  --accent: #c4520c;
   --accent-ink: #ffffff;
-  --accent-soft: #dce5fb;
+  --accent-soft: #fbe3d3;
   --ok: #1b7f4b;
   --ok-soft: #d8f0e2;
   --danger: #b3261e;
-  --k1: #1f4fd8;
-  --k2: #c2410c;
+  --k1: #c4520c;
+  --k2: #6d3fd1;
   --k3: #0f766e;
   --font-display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
   --font-body: "Barlow", "Helvetica Neue", Arial, sans-serif;
