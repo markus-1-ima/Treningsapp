@@ -259,3 +259,17 @@ select.inp { background: var(--surface); }
 .msg.ok { color: var(--ok); }
 .auth-links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .linkbtn { background: none; border: 0; padding: 6px 0; color: var(--accent); cursor: pointer; text-decoration: underline; font-size: 14px; }
+
+/* Øvelsesanimasjoner */
+.anim { width: 100%; aspect-ratio: 150 / 134; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.anim svg { width: 100%; height: 100%; display: block; }
+.anim path, .anim line, .anim circle { vector-effect: non-scaling-stroke; }
+.anim path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.anim .near { stroke: var(--ink); stroke-width: 5px; }
+.anim .far { stroke: var(--muted); stroke-width: 4.4px; }
+.anim .hd { fill: var(--surface); stroke: var(--ink); stroke-width: 4px; }
+.anim .gnd { stroke: var(--line); stroke-width: 2px; stroke-linecap: round; }
+.anim .prop { stroke: var(--accent); stroke-width: 4px; opacity: .55; }
+.anim .wall { stroke-width: 6px; }
+.ex-anim { max-width: 360px; }
+.libcard .anim { margin-bottom: 4px; }

@@ -72,7 +72,7 @@
   var sess = null;
   try { var rs = localStorage.getItem('tb_sess'); if (rs) sess = JSON.parse(rs); } catch (e) { }
 
-  var view = 'uke', weekOffset = 0, armed = '';
+  var view = 'uke', weekOffset = 0, armed = '', shownEx = {};
   var touched = false, ref = null;
   var P = function (id) { return state.programs.filter(function (p) { return p.id === id; })[0]; };
   var todayIdx = function () { return (new Date().getDay() + 6) % 7; };
@@ -177,7 +177,10 @@
     var K = KINDS[sess.kind] || KINDS.styrke, kg = sess.kind === 'styrke', nk = kg ? '' : ' nokg';
     var out = '<div class="sess-head"><div><h2 style="font-family:var(--font-display);font-size:34px;text-transform:uppercase;line-height:1.05">' + esc(sess.name) + '</h2><p class="sub" id="sess-prog">' + sessProgress() + '</p></div><div class="timer tnum" id="elapsed" aria-label="Tid brukt">' + fmtTime((Date.now() - sess.start) / 1000) + '</div></div>';
     sess.rows.forEach(function (r, ri) {
+      var canShow = !!(window.TBAnim && TBAnim.has(r.name)), open = canShow && !!shownEx[r.name];
       out += '<article class="panel ex"><div class="ex-top"><h3>' + esc(r.name) + '</h3><span class="plan">Plan: ' + esc(r.plan) + '</span></div>';
+      if (canShow) out += '<div><button class="btn btn-sm btn-ghost" data-act="show-ex" data-r="' + ri + '" aria-expanded="' + open + '">' + (open ? 'Skjul animasjon' : 'Vis hvordan') + '</button></div>';
+      if (open) out += '<div class="ex-anim">' + TBAnim.html(r.name) + '</div>';
       out += '<div class="fieldlab' + nk + '"><span>Sett</span>' + (kg ? '<span>Kg</span>' : '') + '<span>' + K.unit + '</span><span></span></div>';
       r.sets.forEach(function (s, si) {
         out += '<div class="setrow' + nk + '"><span class="n">' + (si + 1) + '</span>' +
@@ -337,8 +340,9 @@
     HOME_LIB.filter(function (x) { return homeFilter === 'Alle' || x[1] === homeFilter; }).forEach(function (x) {
       var pips = '';
       for (var i = 1; i <= 3; i++) pips += '<i' + (i <= x[2] ? ' class="on"' : '') + '></i>';
-      h += '<article class="panel libcard"><div class="lib-top"><h4>' + esc(x[0]) + '</h4><span class="lvl" title="Nivå: ' + LEVELS[x[2]] + '">' + pips + '</span></div>' +
-        '<div class="sub">' + esc(x[1]) + ' · ' + LEVELS[x[2]] + '</div><p>' + esc(x[3]) + '</p></article>';
+      var holdTxt = (window.TBAnim && TBAnim.isHold(x[0])) ? ' · Holdøvelse' : '';
+      h += '<article class="panel libcard">' + (window.TBAnim ? TBAnim.html(x[0]) : '') + '<div class="lib-top"><h4>' + esc(x[0]) + '</h4><span class="lvl" title="Nivå: ' + LEVELS[x[2]] + '">' + pips + '</span></div>' +
+        '<div class="sub">' + esc(x[1]) + ' · ' + LEVELS[x[2]] + holdTxt + '</div><p>' + esc(x[3]) + '</p></article>';
     });
     return h + '</div>';
   }
@@ -354,6 +358,7 @@
     $('#restbar').hidden = !showRest;
     document.body.classList.toggle('has-rest', showRest);
     drawRest();
+    if (window.TBAnim) TBAnim.refresh();
   }
   function route() {
     var h = location.hash.slice(1);
@@ -484,6 +489,11 @@
         var sug = [0, 4, null, 1, 2, 3, 5];
         state.plans.h.week = sug.map(function (i) { return i === null ? null : homeProgram(i).id; });
         save(); render(); break;
+      }
+      case 'show-ex': {
+        var exName = sess.rows[+t.dataset.r].name;
+        shownEx[exName] = !shownEx[exName];
+        render(); break;
       }
       case 'hf': homeFilter = t.dataset.k; render(); break;
       case 'home-add': homeProgram(+t.dataset.i); render(); break;
