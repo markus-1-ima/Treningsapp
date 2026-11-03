@@ -265,11 +265,14 @@ select.inp { background: var(--surface); }
 .anim svg { width: 100%; height: 100%; display: block; }
 .anim path, .anim line, .anim circle { vector-effect: non-scaling-stroke; }
 .anim path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.anim .near { stroke: var(--ink); stroke-width: 5px; }
-.anim .far { stroke: var(--muted); stroke-width: 4.4px; }
+.anim .ln { stroke: var(--ink); stroke-width: 5px; }
+.anim .lnh { stroke: var(--accent); stroke-width: 5px; }
+.anim .lf { stroke: var(--muted); stroke-width: 4.4px; opacity: .7; }
+.anim .lfh { stroke: var(--accent); stroke-width: 4.4px; opacity: .5; }
 .anim .hd { fill: var(--surface); stroke: var(--ink); stroke-width: 4px; }
 .anim .gnd { stroke: var(--line); stroke-width: 2px; stroke-linecap: round; }
-.anim .prop { stroke: var(--accent); stroke-width: 4px; opacity: .55; }
+.anim .prop { stroke: var(--muted); stroke-width: 4px; opacity: .45; }
 .anim .wall { stroke-width: 6px; }
+.anim .solid { fill: var(--line); }
 .ex-anim { max-width: 360px; }
 .libcard .anim { margin-bottom: 4px; }

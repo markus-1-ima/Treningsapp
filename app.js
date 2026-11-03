@@ -332,7 +332,7 @@
         '<div class="row-actions"><button class="btn btn-primary btn-sm" data-act="home-start" data-i="' + i + '">Start nå</button>' +
         '<button class="btn btn-sm" data-act="home-add" data-i="' + i + '"' + (added ? ' disabled' : '') + '>' + (added ? '✓ I programmene' : 'Legg til i programmer') + '</button></div></article>';
     });
-    h += '</div><h3 class="subhead">Øvelsesbibliotek</h3><div class="chips" role="group" aria-label="Filtrer øvelser">';
+    h += '</div><h3 class="subhead">Øvelsesbibliotek</h3><p class="sub">Fargede deler av figuren viser hva som jobber mest.</p><div class="chips" role="group" aria-label="Filtrer øvelser">';
     ['Alle'].concat(HOME_GROUPS).forEach(function (g) {
       h += '<button class="chip" data-act="hf" data-k="' + esc(g) + '" aria-pressed="' + (g === homeFilter) + '">' + g + '</button>';
     });
