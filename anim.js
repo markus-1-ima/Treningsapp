@@ -106,13 +106,17 @@
       { h: [100, 53], t: -88, a: [92, 46], b: [108, 46], f: [100, 104], g: [100, 104], fa: 0, ga: 0 }] },
 
     // Stå, hender i gulvet, planke, tilbake, sats, hopp med armene over hodet, land.
-    { name: 'Burpees', hi: ['legs', 'arms'], cycle: true, jump: true, seg: 0.6, p: [
-      { h: [96, 53], t: -90, a: [98, 58], b: [92, 58], f: [96, 104], fa: 0 },
-      { h: [80, 84], t: -10, a: [124, 104], b: [118, 104], f: [96, 104], fa: 0 },
-      { h: [89.9, 80.4], t: -16.3, a: [119, 104], b: [115, 104], f: [40, 95], fa: 80 },
-      { h: [80, 84], t: -10, a: [124, 104], b: [118, 104], f: [96, 104], fa: 0 },
-      { h: [90, 68], t: -75, a: [86, 66], b: [82, 66], f: [96, 104], fa: 0 },
-      { h: [96, 34], t: -90, a: [112, -30], b: [80, -30], f: [96, 84], fa: 70 }] },
+    // s = sekunder fra denne stillingen til neste. Beina skytes bakover og trekkes inn i ett raskt hopp,
+    // så figuren ikke kryper på knærne mellom knebøy og planke.
+    { name: 'Burpees', hi: ['legs', 'arms'], cycle: true, jump: true, arc: true, seg: 0.6, p: [
+      { h: [96, 53], t: -90, a: [98, 58], b: [92, 58], f: [96, 104], fa: 0, s: 0.6 },
+      { h: [80, 84], t: -10, a: [124, 104], b: [118, 104], f: [96, 104], fa: 0, s: 0.26 },
+      { h: [88, 76], t: -15, a: [121, 104], b: [117, 104], f: [40, 78], fa: 40, s: 0.24 },
+      { h: [89.9, 80.4], t: -16.3, a: [119, 104], b: [115, 104], f: [40, 95], fa: 80, s: 0.6 },
+      { h: [88, 76], t: -15, a: [121, 104], b: [117, 104], f: [40, 78], fa: 40, s: 0.24 },
+      { h: [80, 84], t: -10, a: [124, 104], b: [118, 104], f: [96, 104], fa: 0, s: 0.36 },
+      { h: [90, 68], t: -75, a: [104, 68], b: [100, 68], f: [96, 104], fa: 0, s: 0.3 },
+      { h: [96, 34], t: -90, a: [112, -30], b: [106, -30], f: [96, 84], fa: 70, s: 0.42 }] },
 
     // ---------- Mobilitet ----------
     { name: 'Katt-ku', hi: ['core'], seg: 1.6, p: [
@@ -185,8 +189,9 @@
     ['h', 'a', 'b', 'f', 'g'].forEach(function (k) { o[k] = lerpPt(a[k], b[k], g); });
     ['t', 'd', 'bw', 'fa', 'ga'].forEach(function (k) { o[k] = a[k] + (b[k] - a[k]) * g; });
     // Forfra svinger armene i en bue rundt skulderen, i stedet for at hånden går i rett linje og knekker albuen.
-    if (ex && ex.front) {
-      var sh = function (p, side) { return [p.h[0] + L.torso * Math.cos(p.t * R) + side * 6, p.h[1] + L.torso * Math.sin(p.t * R) + 2]; };
+    if (ex && (ex.front || ex.arc)) {
+      var off = ex.front ? 6 : 0, dy = ex.front ? 2 : 0;
+      var sh = function (p, side) { return [p.h[0] + L.torso * Math.cos(p.t * R) + side * off, p.h[1] + L.torso * Math.sin(p.t * R) + dy]; };
       [['a', -1], ['b', 1]].forEach(function (k) {
         var key = k[0], side = k[1];
         if (!a[key] || !b[key]) return;
@@ -202,10 +207,13 @@
     return o;
   }
 
+  function cycleLen(ex) { return ex.p.reduce(function (a, p) { return a + (p.s || ex.seg); }, 0); }
   function poseAt(ex, t) {
     var n = ex.p.length, u = t / ex.seg, i, j, s;
     if (ex.cycle) {
-      u = u % n; i = Math.floor(u); j = (i + 1) % n; s = u - i;
+      var tot = cycleLen(ex), tt = t % tot, acc = 0;
+      for (i = 0; i < n; i++) { var d = ex.p[i].s || ex.seg; if (tt < acc + d || i === n - 1) { s = Math.min(1, (tt - acc) / d); break; } acc += d; }
+      j = (i + 1) % n;
     } else {
       var m = 2 * (n - 1);
       u = u % m;
@@ -290,7 +298,7 @@
   // Beregner utsnittet som rommer hele bevegelsen, så figuren fyller bildet.
   function fit(ex) {
     var x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
-    var total = ex.cycle ? ex.p.length * ex.seg : 2 * (ex.p.length - 1) * ex.seg;
+    var total = ex.cycle ? cycleLen(ex) : 2 * (ex.p.length - 1) * ex.seg;
     function add(x, y) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
     for (var k = 0; k < 48; k++) {
       var s = shapes(ex, poseAt(ex, total * k / 48));
@@ -669,7 +677,7 @@
   function html(name) {
     var ex = find(name);
     if (!ex) return '';
-    return '<div class="anim" data-ex="' + esc(ex.name) + '" data-pose="0" data-seg="' + ex.seg + '" data-n="' + ex.p.length + '" data-cycle="' + (ex.cycle ? 1 : 0) + '"' +
+    return '<div class="anim" data-ex="' + esc(ex.name) + '" data-pose="0" data-seg="' + ex.seg + '" data-n="' + ex.p.length + '" data-cycle="' + (ex.cycle ? 1 : 0) + '" data-total="' + r1(ex.cycle ? cycleLen(ex) : 2 * (ex.p.length - 1) * ex.seg) + '"' +
       (reduce ? ' tabindex="0" title="Trykk for å bytte stilling"' : '') +
       ' role="img" aria-label="Animasjon av ' + esc(ex.name.toLowerCase()) + '">' +
       '<svg viewBox="' + ex.vb.join(' ') + '" aria-hidden="true" focusable="false">' +
