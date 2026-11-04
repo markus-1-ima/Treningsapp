@@ -277,3 +277,39 @@ select.inp { background: var(--surface); }
 .anim .sh { fill: var(--muted); stroke: none; }
 .ex-anim { max-width: 360px; }
 .libcard .anim { margin-bottom: 4px; }
+
+/* Intervalltimer */
+.ivset { display: flex; flex-direction: column; gap: 14px; }
+.ivset .row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ivset label { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.ivset .chip b { color: var(--accent); }
+.iv { display: flex; flex-direction: column; gap: 14px; border-width: 2px; }
+.iv.ph-work { border-color: var(--accent); }
+.iv.ph-rest, .iv.ph-done { border-color: var(--ok); }
+.iv-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.iv-phase { font-family: var(--font-display); font-weight: 700; font-size: 32px; line-height: 1; text-transform: uppercase; letter-spacing: .04em; }
+.ph-work .iv-phase { color: var(--accent); }
+.ph-rest .iv-phase, .ph-done .iv-phase { color: var(--ok); }
+.is-paused .iv-phase { color: var(--muted); }
+.iv-time { font-family: var(--font-display); font-weight: 700; font-size: clamp(80px, 24vw, 150px); line-height: .9; text-align: center; }
+.is-paused .iv-time { color: var(--muted); }
+.iv-bar { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; }
+.iv-bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+.ph-rest .iv-bar i, .ph-prep .iv-bar i { background: var(--ok); }
+.iv-dots { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.iv-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.iv-dots i.on { background: var(--ok); }
+.iv-dots i.cur { background: var(--accent); }
+.iv-ex { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.iv-ex .anim { max-width: 300px; }
+.iv-exname { font-weight: 600; font-size: 21px; text-align: center; overflow-wrap: anywhere; }
+.iv-donetxt { font-family: var(--font-display); font-weight: 700; font-size: 40px; line-height: 1; }
+
+/* Personlige rekorder */
+.prtag { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-ink); background: var(--accent); border-radius: 4px; padding: 2px 7px; }
+.pr-new { display: flex; align-items: center; gap: 8px; margin: -2px 0 2px 36px; font-size: 14px; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
+.celebrate { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 12px; padding: 14px 16px; }
+.celebrate h3 { font-family: var(--font-display); font-weight: 700; font-size: 26px; text-transform: uppercase; letter-spacing: .02em; margin-bottom: 6px; }
+.celebrate ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; }
+.prval { font-weight: 600; white-space: nowrap; }
+@media (max-width: 520px) { .ivset .row3 input { padding: 0 6px; } }

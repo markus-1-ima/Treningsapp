@@ -27,6 +27,7 @@
     return Math.ceil(((t - y0) / 86400000 + 1) / 7);
   }
   var nf = function (n) { return Math.round(n).toLocaleString('nb-NO'); };
+  var fmtNum = function (n) { return (Math.round(n * 10) / 10).toLocaleString('nb-NO'); };
   var num = function (v) { var n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : 0; };
 
   var DAYS = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
@@ -62,6 +63,14 @@
     s.log = Array.isArray(s.log) ? s.log : [];
     s.last = s.last || {};
     s.rest = s.rest || 90;
+    s.pr = (s.pr && typeof s.pr === 'object') ? s.pr : {};
+    var iv = s.iv || {};
+    s.iv = {
+      work: iv.work > 0 ? iv.work : 40,
+      rest: iv.rest >= 0 ? iv.rest : 20,
+      rounds: iv.rounds > 0 ? iv.rounds : 8,
+      ex: Array.isArray(iv.ex) ? iv.ex : ['Jumping jacks', 'Høye knær', 'Burpees', 'Knebøy']
+    };
     return s;
   }
 
@@ -73,6 +82,7 @@
   try { var rs = localStorage.getItem('tb_sess'); if (rs) sess = JSON.parse(rs); } catch (e) { }
 
   var view = 'uke', weekOffset = 0, armed = '', shownEx = {};
+  var iv = null, ivTimer = null, celebrate = null;   // intervalltimer som kjører, nye rekorder å vise
   var touched = false, ref = null;
   var P = function (id) { return state.programs.filter(function (p) { return p.id === id; })[0]; };
   var todayIdx = function () { return (new Date().getDay() + 6) % 7; };
@@ -163,9 +173,11 @@
   var CHECK = '<'+'svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/><'+'/svg>';
 
   function viewOkt() {
+    if (!sess && iv) return viewInterval();
     if (!sess) {
       var plannedId = curPlan().week[todayIdx()];
-      var h = '<div class="sec-head"><div><h2>Start en økt</h2><p class="sub">Velg et program. Vekter og reps fylles inn fra forrige gang.</p></div></div>';
+      var h = ivSetup();
+      h += '<div class="sec-head"><div><h2>Start en økt</h2><p class="sub">Velg et program. Vekter og reps fylles inn fra forrige gang.</p></div></div>';
       if (!state.programs.length) return h + '<p class="empty">Du har ingen programmer ennå. Lag ett under Programmer.</p>';
       h += '<div class="sess-list">';
       state.programs.forEach(function (p) {
@@ -178,7 +190,8 @@
     var out = '<div class="sess-head"><div><h2 style="font-family:var(--font-display);font-size:34px;text-transform:uppercase;line-height:1.05">' + esc(sess.name) + '</h2><p class="sub" id="sess-prog">' + sessProgress() + '</p></div><div class="timer tnum" id="elapsed" aria-label="Tid brukt">' + fmtTime((Date.now() - sess.start) / 1000) + '</div></div>';
     sess.rows.forEach(function (r, ri) {
       var canShow = !!(window.TBAnim && TBAnim.has(r.name)), open = canShow && !!shownEx[r.name];
-      out += '<article class="panel ex"><div class="ex-top"><h3>' + esc(r.name) + '</h3><span class="plan">Plan: ' + esc(r.plan) + '</span></div>';
+      var rec = rowRecord(r);
+      out += '<article class="panel ex"><div class="ex-top"><h3>' + esc(r.name) + '</h3><span class="plan">Plan: ' + esc(r.plan) + (rec ? ' · Rekord: ' + esc(prText(rec)) : '') + '</span></div>';
       if (canShow) out += '<div><button class="btn btn-sm btn-ghost" data-act="show-ex" data-r="' + ri + '" aria-expanded="' + open + '">' + (open ? 'Skjul animasjon' : 'Vis hvordan') + '</button></div>';
       if (open) out += '<div class="ex-anim">' + TBAnim.html(r.name) + '</div>';
       out += '<div class="fieldlab' + nk + '"><span>Sett</span>' + (kg ? '<span>Kg</span>' : '') + '<span>' + K.unit + '</span><span></span></div>';
@@ -187,6 +200,7 @@
           (kg ? '<input class="inp" type="number" inputmode="decimal" step="0.5" min="0" data-f="sk" data-r="' + ri + '" data-s="' + si + '" value="' + esc(s.kg) + '" aria-label="Kilo, sett ' + (si + 1) + '">' : '') +
           '<input class="inp" type="number" inputmode="decimal" min="0" data-f="sr" data-r="' + ri + '" data-s="' + si + '" value="' + esc(s.reps) + '" aria-label="' + K.unit + ', sett ' + (si + 1) + '">' +
           '<button class="check' + (s.done ? ' done' : '') + '" data-act="setdone" data-r="' + ri + '" data-s="' + si + '" aria-pressed="' + (s.done ? 'true' : 'false') + '" aria-label="Sett ' + (si + 1) + ' fullført">' + CHECK + '</button></div>';
+        if (s.done && beatsRecord(r.name, s)) out += '<div class="pr-new"><span class="prtag">Ny rekord</span> ' + esc(prText(setRec(sess.kind, s))) + '</div>';
       });
       out += '<div><button class="btn btn-sm btn-ghost" data-act="addset" data-r="' + ri + '">+ Legg til sett</button></div></article>';
     });
@@ -258,6 +272,11 @@
     var vol = recent.reduce(function (a, l) { return a + (l.vol || 0); }, 0);
     var volTxt = vol >= 1000 ? '<span class="big tnum">' + (vol / 1000).toLocaleString('nb-NO', { maximumFractionDigits: 1 }) + '<small>tonn</small></span>' : '<span class="big tnum">' + nf(vol) + '<small>kg</small></span>';
     var h = '<div class="sec-head"><div><h2>Fremgang</h2><p class="sub">Siste 30 dager og siste åtte uker.</p></div></div>';
+    if (celebrate) {
+      h += '<div class="celebrate" role="status"><div><h3>' + (celebrate.length === 1 ? 'Ny personlig rekord!' : celebrate.length + ' nye personlige rekorder!') + '</h3><ul>' +
+        celebrate.map(function (c) { return '<li><b>' + esc(c.name) + ':</b> ' + esc(c.text) + ' <span class="sub">(før ' + esc(c.old) + ')</span></li>'; }).join('') +
+        '</ul></div><button class="btn btn-sm" data-act="celebrate-x">Lukk</button></div>';
+    }
     h += '<div class="tiles"><div class="panel tile"><span class="big tnum">' + recent.length + '</span><div class="lab">Økter siste 30 dager</div></div>' +
       '<div class="panel tile">' + volTxt + '<div class="lab">Løftet volum (styrkeøkter)</div></div>' +
       '<div class="panel tile"><span class="big tnum">' + streakWeeks() + '<small>uker</small></span><div class="lab">På rad med ukemålet nådd</div></div></div>';
@@ -268,14 +287,29 @@
       h += '<div class="hist">';
       state.log.slice(0, 20).forEach(function (l) {
         var d = parseIso(l.d), key = 'l' + l.id;
-        var meta = l.min + ' min · ' + l.n + ' sett' + (l.vol > 0 ? ' · ' + nf(l.vol) + ' kg' : '');
+        var meta = l.min + ' min · ' + l.n + ' ' + (l.unit || 'sett') + (l.vol > 0 ? ' · ' + nf(l.vol) + ' kg' : '') +
+          (l.prs ? ' · ' + l.prs + (l.prs === 1 ? ' rekord' : ' rekorder') : '');
         h += '<div class="hrow"><span class="d">' + DAYS[(d.getDay() + 6) % 7] + ' ' + dateLabel(d) + '</span><div><div class="pn">' + esc(l.name) + '</div><div class="meta">' + meta + '</div></div>' +
           '<button class="btn btn-sm btn-ghost btn-danger" data-act="del-log" data-id="' + esc(l.id) + '" aria-label="Slett økt">' + (armed === key ? 'Slett?' : 'Slett') + '</button></div>';
       });
       h += '</div>';
       if (state.log.length > 20) h += '<p class="sub" style="margin-top:8px">Viser de 20 siste av ' + state.log.length + ' økter.</p>';
     }
-    return h + '</div>';
+    h += '</div>';
+    return h + prPanel();
+  }
+
+  function prPanel() {
+    var list = Object.keys(state.pr).map(function (k) { return state.pr[k]; });
+    list.sort(function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : a.name.localeCompare(b.name, 'nb'); });
+    var h = '<div class="panel"><h3 style="font-size:17px;margin-bottom:4px">Personlige rekorder</h3>';
+    if (!list.length) return h + '<p class="empty">Fullfør en styrke- eller core-økt, så lagres rekordene dine her.</p></div>';
+    h += '<div class="hist">';
+    list.slice(0, 15).forEach(function (r) {
+      h += '<div class="hrow"><span class="d">' + dateLabel(parseIso(r.d)) + '</span><div><div class="pn">' + esc(r.name) + '</div><div class="meta">' + esc(PR_LABEL[r.type]) + '</div></div><span class="prval tnum">' + esc(prText(r)) + '</span></div>';
+    });
+    if (list.length > 15) h += '<p class="sub" style="margin-top:8px">Viser de 15 nyeste av ' + list.length + ' rekorder.</p>';
+    return h + '</div></div>';
   }
 
   /* ---------- hjemmetrening ---------- */
@@ -363,6 +397,7 @@
   function route() {
     var h = location.hash.slice(1);
     view = VIEWS.indexOf(h) > -1 ? h : 'uke';
+    if (view !== 'fremgang') celebrate = null;
     armed = '';
     render();
   }
@@ -371,15 +406,19 @@
 
   /* ---------- rest timer ---------- */
   var restEnd = 0, restTimer = null, audio = null;
-  function beep() {
+  function beep(freq, dur) {
     try {
       if (!audio) return;
       var o = audio.createOscillator(), g = audio.createGain();
-      o.type = 'sine'; o.frequency.value = 880; g.gain.value = 0.15;
+      o.type = 'sine'; o.frequency.value = freq || 880; g.gain.value = 0.15;
       o.connect(g); g.connect(audio.destination);
-      o.start(); o.stop(audio.currentTime + 0.35);
+      o.start(); o.stop(audio.currentTime + (dur || 0.35));
     } catch (e) { }
   }
+  function ensureAudio() {
+    try { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch (e) { }
+  }
+  function buzz(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { } }
   function drawRest() {
     var el = $('#rest-time'), bar = $('#restbar');
     if (!el) return;
@@ -395,7 +434,7 @@
     }
   }
   function startRest(sec) {
-    try { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch (e) { }
+    ensureAudio();
     if (state.rest !== sec) { state.rest = sec; save(); }
     $('#restbar').classList.remove('ready');
     restEnd = Date.now() + sec * 1000;
@@ -421,7 +460,7 @@
         var last = state.last[e.name] || {};
         var n = Math.max(1, Math.round(num(e.sets)) || 1), sets = [];
         for (var i = 0; i < n; i++) sets.push({ kg: kg ? (last.kg != null ? last.kg : e.kg) : 0, reps: last.reps != null ? last.reps : e.reps, done: false });
-        return { name: e.name, plan: n + ' × ' + e.reps + (kg ? ' × ' + e.kg + ' kg' : ' ' + K.unit.toLowerCase()), sets: sets };
+        return { name: e.name, plan: n + ' × ' + e.reps + (kg ? (num(e.kg) > 0 ? ' × ' + e.kg + ' kg' : '') : ' ' + K.unit.toLowerCase()), sets: sets };
       })
     };
     saveDraft(); stopRest();
@@ -441,10 +480,198 @@
     });
     if (!done) { var m = $('#sess-msg'); if (m) m.textContent = 'Merk av minst ett sett først.'; return; }
     mins = Math.max(1, Math.round((Date.now() - sess.start) / 60000));
-    state.log.unshift({ id: uid(), d: iso(new Date()), pid: sess.pid, name: sess.name, kind: sess.kind, min: mins, vol: Math.round(vol), n: done });
+    var newPRs = updateRecords(sess);
+    celebrate = newPRs.length ? newPRs : null;
+    state.log.unshift({ id: uid(), d: iso(new Date()), pid: sess.pid, name: sess.name, kind: sess.kind, min: mins, vol: Math.round(vol), n: done, prs: newPRs.length });
     state.log = state.log.slice(0, 400);
     sess = null; saveDraft(); stopRest(); save();
     go('fremgang');
+  }
+
+  /* ---------- personlige rekorder ---------- */
+  // kg = tyngste vekt (flest reps ved lik vekt), reps = flest reps i ett sett, sek = lengste hold.
+  var PR_LABEL = { kg: 'Tyngste vekt', reps: 'Flest reps i ett sett', sek: 'Lengste hold' };
+  function prType(kind, kg) { if (kind === 'styrke') return kg > 0 ? 'kg' : 'reps'; if (kind === 'core') return 'sek'; return null; }
+  function prKey(name, type) { return String(name || '').trim().toLowerCase() + '|' + type; }
+  function prBetter(type, a, b) {
+    if (!b) return true;
+    if (type === 'kg') return a.kg > b.kg || (a.kg === b.kg && a.reps > b.reps);
+    return a.reps > b.reps;
+  }
+  function prText(r) {
+    if (!r) return '';
+    if (r.type === 'kg') return fmtNum(r.kg) + ' kg × ' + fmtNum(r.reps);
+    if (r.type === 'sek') return fmtNum(r.reps) + ' sek';
+    return fmtNum(r.reps) + ' reps';
+  }
+  function setRec(kind, s) {
+    var kg = kind === 'styrke' ? num(s.kg) : 0, type = prType(kind, kg);
+    return type ? { type: type, kg: kg, reps: num(s.reps) } : null;
+  }
+  function rowRecord(r) {
+    var rec = r.sets[0] ? setRec(sess.kind, r.sets[0]) : null;
+    return rec ? state.pr[prKey(r.name, rec.type)] || null : null;
+  }
+  // Et avkrysset sett slår rekorden bare når det finnes en rekord fra før.
+  function beatsRecord(name, s) {
+    var rec = setRec(sess.kind, s);
+    if (!rec || rec.reps <= 0) return false;
+    var old = state.pr[prKey(name, rec.type)];
+    return !!old && prBetter(rec.type, rec, old);
+  }
+  // Oppdaterer rekordene etter en økt. Første gang en øvelse gjøres lagres den stille som utgangspunkt.
+  function updateRecords(se) {
+    var out = [], today = iso(new Date());
+    se.rows.forEach(function (r) {
+      var best = {};
+      r.sets.forEach(function (s) {
+        if (!s.done) return;
+        var rec = setRec(se.kind, s);
+        if (!rec || rec.reps <= 0) return;
+        if (!best[rec.type] || prBetter(rec.type, rec, best[rec.type])) best[rec.type] = rec;
+      });
+      Object.keys(best).forEach(function (type) {
+        var rec = best[type], key = prKey(r.name, type), old = state.pr[key];
+        if (old && !prBetter(type, rec, old)) return;
+        state.pr[key] = { name: String(r.name).trim(), type: type, kg: rec.kg, reps: rec.reps, d: today };
+        if (old) out.push({ name: String(r.name).trim(), text: prText(state.pr[key]), old: prText(old) });
+      });
+    });
+    return out;
+  }
+
+  /* ---------- intervalltimer ---------- */
+  var IV_PREP = 5;
+  var IV_PRESETS = [
+    { w: 20, r: 10, n: 8, label: 'Tabata 20/10 × 8' },
+    { w: 30, r: 30, n: 10, label: '30/30 × 10' },
+    { w: 40, r: 20, n: 8, label: '40/20 × 8' },
+    { w: 45, r: 15, n: 6, label: '45/15 × 6' }
+  ];
+  var IV_EX = ['Jumping jacks', 'Høye knær', 'Burpees', 'Knebøy', 'Utfall', 'Armhevinger', 'Planke', 'Bekkenløft', 'Superman', 'Dødbille'];
+  var wake = null;
+  function wakeOn() {
+    try {
+      if (!navigator.wakeLock || wake) return;
+      navigator.wakeLock.request('screen').then(function (w) { wake = w; w.addEventListener('release', function () { wake = null; }); }, function () { });
+    } catch (e) { }
+  }
+  function wakeOff() { try { if (wake) wake.release(); } catch (e) { } wake = null; }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && iv && iv.phase !== 'done' && !iv.paused) wakeOn(); });
+
+  function clock(sec) { sec = Math.max(0, Math.ceil(sec)); return Math.floor(sec / 60) + ':' + pad(sec % 60); }
+  function ivTotal() { var c = state.iv; return IV_PREP + c.rounds * c.work + (c.rounds - 1) * c.rest; }
+  function ivExFor(round) { var l = state.iv.ex; return l.length ? l[(round - 1) % l.length] : null; }
+  function clampInt(v, lo, hi) { var n = Math.round(num(v)); return Math.min(hi, Math.max(lo, n)); }
+
+  function ivSetup() {
+    var c = state.iv;
+    var h = '<section class="panel ivset" aria-labelledby="iv-h"><div class="sec-head"><div><h2 id="iv-h">Intervalltimer</h2><p class="sub">Jobb og pause på tid, med pip før hvert bytte.</p></div></div>';
+    h += '<div class="chips" role="group" aria-label="Ferdige oppsett">' + IV_PRESETS.map(function (p) {
+      var on = p.w === c.work && p.r === c.rest && p.n === c.rounds;
+      return '<button class="chip" data-act="iv-pre" data-w="' + p.w + '" data-r="' + p.r + '" data-n="' + p.n + '" aria-pressed="' + on + '">' + p.label + '</button>';
+    }).join('') + '</div>';
+    h += '<div class="row3"><label for="iv-w">Jobb (sek)<input id="iv-w" class="inp" type="number" inputmode="numeric" min="5" max="600" data-f="ivw" value="' + c.work + '"></label>' +
+      '<label for="iv-r">Pause (sek)<input id="iv-r" class="inp" type="number" inputmode="numeric" min="0" max="600" data-f="ivr" value="' + c.rest + '"></label>' +
+      '<label for="iv-n">Runder<input id="iv-n" class="inp" type="number" inputmode="numeric" min="1" max="50" data-f="ivn" value="' + c.rounds + '"></label></div>';
+    h += '<div><div class="sub" style="margin-bottom:6px">Øvelser, i rekkefølgen du velger dem. De går på omgang, én per runde.</div><div class="chips" role="group" aria-label="Øvelser">' +
+      IV_EX.map(function (n) {
+        var i = c.ex.indexOf(n);
+        return '<button class="chip" data-act="iv-ex" data-k="' + esc(n) + '" aria-pressed="' + (i > -1) + '">' + (i > -1 ? '<b class="tnum">' + (i + 1) + '</b> ' : '') + esc(n) + '</button>';
+      }).join('') + '</div></div>';
+    h += '<div class="sess-foot"><button class="btn btn-primary" data-act="iv-start">Start intervaller</button><span class="sub tnum" id="iv-total">Totalt ' + clock(ivTotal()) + '</span></div></section>';
+    return h;
+  }
+
+  function viewInterval() {
+    var c = state.iv;
+    if (iv.phase === 'done') {
+      return '<section class="panel iv ph-done"><div class="iv-top"><span class="iv-phase">Ferdig</span></div>' +
+        '<p class="iv-donetxt tnum">' + iv.doneRounds + ' runder · ' + clock((iv.stopped - iv.start) / 1000) + '</p><p class="sub">Økta er lagret i fremgangen din.</p>' +
+        '<div class="sess-foot"><button class="btn btn-primary" data-act="iv-close" data-to="fremgang">Se fremgang</button><button class="btn" data-act="iv-close">Tilbake</button></div></section>';
+    }
+    var labels = { prep: 'Gjør deg klar', work: 'Jobb', rest: 'Pause' };
+    var left = iv.paused ? iv.left : iv.end - Date.now();
+    var exName = iv.phase === 'work' ? ivExFor(iv.round) : ivExFor(iv.phase === 'prep' ? iv.round : iv.round + 1);
+    var dots = '';
+    if (c.rounds <= 20) {
+      for (var i = 1; i <= c.rounds; i++) dots += '<i class="' + (i <= iv.doneRounds ? 'on' : '') + (i === iv.round && iv.phase === 'work' ? ' cur' : '') + '"></i>';
+    }
+    var h = '<section class="panel iv ph-' + iv.phase + (iv.paused ? ' is-paused' : '') + '" aria-live="polite">';
+    h += '<div class="iv-top"><span class="iv-phase">' + (iv.paused ? 'Stoppet' : labels[iv.phase]) + '</span><span class="sub tnum">Runde ' + Math.min(iv.round, c.rounds) + ' av ' + c.rounds + '</span></div>';
+    h += '<div class="iv-time tnum" id="iv-time" role="timer">' + clock(left / 1000) + '</div>';
+    h += '<div class="iv-bar" aria-hidden="true"><i id="iv-fill" style="width:' + Math.min(100, Math.max(0, (1 - left / iv.dur) * 100)).toFixed(1) + '%"></i></div>';
+    if (dots) h += '<div class="iv-dots" aria-hidden="true">' + dots + '</div>';
+    if (exName) {
+      h += '<div class="iv-ex"><div class="iv-exname">' + (iv.phase === 'work' ? '' : '<span class="sub">Neste: </span>') + esc(exName) + '</div>' +
+        (window.TBAnim && TBAnim.has(exName) ? TBAnim.html(exName) : '') + '</div>';
+    }
+    h += '<div class="sess-foot"><button class="btn btn-primary" data-act="iv-pause">' + (iv.paused ? 'Fortsett' : 'Pause') + '</button>' +
+      '<button class="btn" data-act="iv-skip">Hopp over</button>' +
+      '<button class="btn btn-ghost' + (armed === 'iv-stop' ? ' btn-danger' : '') + '" data-act="iv-stop">' + (armed === 'iv-stop' ? (iv.doneRounds ? 'Avslutt og lagre?' : 'Avslutt uten å lagre?') : 'Avslutt') + '</button></div>';
+    return h + '</section>';
+  }
+
+  function ivStart() {
+    ensureAudio();
+    var now = Date.now();
+    iv = { phase: 'prep', round: 1, doneRounds: 0, start: now, dur: IV_PREP * 1000, end: now + IV_PREP * 1000, paused: false, left: 0, beeped: 0 };
+    clearInterval(ivTimer);
+    ivTimer = setInterval(ivTick, 200);
+    wakeOn();
+    beep(660, 0.15);
+    render();
+  }
+  function ivSetPhase(ph, sec, base) {
+    iv.phase = ph; iv.dur = sec * 1000; iv.end = base + iv.dur; iv.beeped = 0;
+    if (Date.now() - base < 1000) {                     // ikke pip når appen tar igjen tid etter å ha vært i bakgrunnen
+      beep(ph === 'work' ? 1046 : 660, 0.4);
+      buzz(ph === 'work' ? [200, 80, 200] : 300);
+    }
+    if (view === 'okt') render();
+  }
+  function ivAdvance(base) {
+    var c = state.iv;
+    if (iv.phase === 'prep') { ivSetPhase('work', c.work, base); return; }
+    if (iv.phase === 'work') {
+      iv.doneRounds = iv.round;
+      if (iv.round >= c.rounds) { ivFinish(); return; }
+      if (c.rest > 0) { ivSetPhase('rest', c.rest, base); return; }
+      iv.round++; ivSetPhase('work', c.work, base); return;
+    }
+    if (iv.phase === 'rest') { iv.round++; ivSetPhase('work', c.work, base); }
+  }
+  function ivTick() {
+    if (!iv || iv.paused || iv.phase === 'done') return;
+    var now = Date.now(), left = iv.end - now;
+    if (left <= 0) { ivAdvance(iv.end); return; }
+    var sec = Math.ceil(left / 1000);
+    if (sec <= 3 && sec !== iv.beeped) { iv.beeped = sec; beep(880, 0.12); }
+    var t = $('#iv-time'), f = $('#iv-fill');
+    if (t) t.textContent = clock(left / 1000);
+    if (f) f.style.width = Math.min(100, Math.max(0, (1 - left / iv.dur) * 100)).toFixed(1) + '%';
+  }
+  function ivLog() {
+    var c = state.iv;
+    state.log.unshift({ id: uid(), d: iso(new Date()), name: 'Intervaller ' + c.work + '/' + c.rest, kind: 'kondisjon',
+      min: Math.max(1, Math.round((iv.stopped - iv.start) / 60000)), vol: 0, n: iv.doneRounds, unit: iv.doneRounds === 1 ? 'runde' : 'runder' });
+    state.log = state.log.slice(0, 400);
+    save();
+  }
+  function ivFinish() {
+    clearInterval(ivTimer); ivTimer = null; wakeOff();
+    iv.phase = 'done'; iv.stopped = Date.now();
+    ivLog();
+    beep(1046, 0.2); setTimeout(function () { beep(1318, 0.5); }, 250);
+    buzz([300, 100, 300, 100, 500]);
+    render();
+  }
+  function ivStop() {
+    clearInterval(ivTimer); ivTimer = null; wakeOff();
+    iv.stopped = Date.now();
+    if (iv.doneRounds > 0) ivLog();
+    iv = null;
+    render();
   }
 
   /* ---------- events ---------- */
@@ -452,7 +679,7 @@
     var t = e.target.closest('[data-act]');
     if (!t) return;
     var a = t.dataset.act, p, ex;
-    var keep = (a === 'del-prog' || a === 'del-log' || a === 'cancel');
+    var keep = (a === 'del-prog' || a === 'del-log' || a === 'cancel' || a === 'iv-stop');
     if (!keep && armed) armed = '';
     switch (a) {
       case 'wk-prev': weekOffset--; render(); break;
@@ -462,15 +689,13 @@
       case 'goal-inc': if (curPlan().goal < 14) { curPlan().goal++; save(); render(); } break;
       case 'hint-x': state.hint = false; save(); render(); break;
       case 'start':
-        if (sess && sess.pid !== t.dataset.p) { go('okt'); break; }
+        if (iv || (sess && sess.pid !== t.dataset.p)) { go('okt'); break; }
         startSession(t.dataset.p); break;
       case 'setdone': {
         var r = +t.dataset.r, s = +t.dataset.s, set = sess.rows[r].sets[s];
         set.done = !set.done; saveDraft();
-        t.classList.toggle('done', set.done); t.setAttribute('aria-pressed', String(set.done));
-        $('#sess-prog').textContent = sessProgress();
-        var msg = $('#sess-msg'); if (msg) msg.textContent = '';
         if (set.done && sess.kind === 'styrke') startRest(state.rest);
+        render();                                                       // viser «Ny rekord» med en gang
         break;
       }
       case 'addset': {
@@ -483,6 +708,31 @@
         if (armed !== 'cancel') { armed = 'cancel'; render(); break; }
         armed = ''; sess = null; saveDraft(); stopRest(); render(); break;
       case 'rest': startRest(Number(t.dataset.s)); break;
+      case 'celebrate-x': celebrate = null; render(); break;
+      case 'iv-pre':
+        state.iv.work = +t.dataset.w; state.iv.rest = +t.dataset.r; state.iv.rounds = +t.dataset.n;
+        save(); render(); break;
+      case 'iv-ex': {
+        var nm = t.dataset.k, ix = state.iv.ex.indexOf(nm);
+        if (ix > -1) state.iv.ex.splice(ix, 1); else state.iv.ex.push(nm);
+        save(); render(); break;
+      }
+      case 'iv-start': if (!sess && !iv) ivStart(); break;
+      case 'iv-pause':
+        if (!iv) break;
+        if (iv.paused) { iv.end = Date.now() + iv.left; iv.paused = false; wakeOn(); }
+        else { iv.left = iv.end - Date.now(); iv.paused = true; }
+        render(); break;
+      case 'iv-skip':
+        if (!iv) break;
+        if (iv.paused) { iv.paused = false; }
+        ivAdvance(Date.now()); if (iv && iv.phase !== 'done') render(); break;
+      case 'iv-stop':
+        if (!iv) break;
+        if (armed !== 'iv-stop') { armed = 'iv-stop'; render(); break; }
+        armed = ''; ivStop(); break;
+      case 'iv-close':
+        iv = null; if (t.dataset.to) go(t.dataset.to); else render(); break;
       case 'rest-stop': stopRest(); break;
       case 'plan-sw': state.active = t.dataset.k === 'h' ? 'h' : 'a'; save(); render(); break;
       case 'home-fill': {
@@ -498,7 +748,7 @@
       case 'hf': homeFilter = t.dataset.k; render(); break;
       case 'home-add': homeProgram(+t.dataset.i); render(); break;
       case 'home-start':
-        if (sess) { go('okt'); break; }
+        if (sess || iv) { go('okt'); break; }
         startSession(homeProgram(+t.dataset.i).id); break;
       case 'add-prog':
         state.programs.push({ id: uid(), name: 'Nytt program', kind: 'styrke', exercises: [{ id: uid(), name: 'Ny øvelse', sets: 3, reps: 10, kg: 0 }] });
@@ -544,6 +794,18 @@
       case 'es': if (ex) { ex.sets = num(t.value); save(); } break;
       case 'er': if (ex) { ex.reps = num(t.value); save(); } break;
       case 'ek': if (ex) { ex.kg = num(t.value); save(); } break;
+      case 'ivw': case 'ivr': case 'ivn': {
+        if (t.value === '') break;
+        if (f === 'ivw') state.iv.work = clampInt(t.value, 5, 600);
+        if (f === 'ivr') state.iv.rest = clampInt(t.value, 0, 600);
+        if (f === 'ivn') state.iv.rounds = clampInt(t.value, 1, 50);
+        save();
+        var tot = $('#iv-total'); if (tot) tot.textContent = 'Totalt ' + clock(ivTotal());
+        document.querySelectorAll('[data-act="iv-pre"]').forEach(function (b) {
+          b.setAttribute('aria-pressed', String(+b.dataset.w === state.iv.work && +b.dataset.r === state.iv.rest && +b.dataset.n === state.iv.rounds));
+        });
+        break;
+      }
       case 'sk': sess.rows[+t.dataset.r].sets[+t.dataset.s].kg = num(t.value); saveDraft(); break;
       case 'sr': sess.rows[+t.dataset.r].sets[+t.dataset.s].reps = num(t.value); saveDraft(); break;
     }
