@@ -6,6 +6,14 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 
 ## Onsdag 4. november 2026
 
+**Nytt utseende i hele appen**
+- På mobil ligger menyen nå fast nederst med ikoner, så alle fem fanene får plass. På PC har fanene fått ikoner.
+- «I dag»-kortet er en mørk flate med svake banelinjer, som på en løpebane, og er lett å få øye på.
+- Overskrifter og etiketter er skrevet med vanlige bokstaver i stedet for store bokstaver overalt.
+- Roligere toppfelt: lagringsstatus vises som en farget prikk (grønn = lagret, rød = kunne ikke lagre).
+- Mykere hjørner, luftigere dagkort, og «+ Legg til» på dagene er tonet ned.
+- Tallene på Fremgang står side om side også på mobil.
+
 **Intervalltimer**
 - Ny intervalltimer øverst i Økt-fanen.
 - Ferdige oppsett (Tabata 20/10 × 8, 30/30 × 10, 40/20 × 8, 45/15 × 6) eller egne tider og antall runder.

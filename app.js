@@ -109,8 +109,8 @@
   var todayIdx = function () { return (new Date().getDay() + 6) % 7; };
 
   /* ---------- persistence ---------- */
-  var syncLabels = { loading: 'Henter …', saving: 'Lagrer …', saved: 'Lagret', local: 'Lagret på denne enheten', error: 'Kunne ikke lagre' };
-  function setSync(k) { var el = $('#sync'); if (el) el.textContent = syncLabels[k]; }
+  var syncLabels = { loading: 'Henter …', saving: 'Lagrer …', saved: 'Lagret', local: 'Lagret lokalt', error: 'Kunne ikke lagre' };
+  function setSync(k) { var el = $('#sync'); if (el) { el.textContent = syncLabels[k]; el.setAttribute('data-state', k); } }
   var saveT = null, saving = false, again = false;
   function save() {
     touched = true;
@@ -282,7 +282,7 @@
       '<button class="btn" data-act="scope" data-k="week" aria-pressed="' + (editScope === 'week') + '">Bare uke ' + wk + '</button></div></div>';
 
     // Dagene
-    var opts = '<option value="">+ Legg til økt</option>' + state.programs.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + '</option>'; }).join('') + '<option value="iv">Intervalltimer</option>';
+    var opts = '<option value="">+ Legg til</option>' + state.programs.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + '</option>'; }).join('') + '<option value="iv">Intervalltimer</option>';
     h += '<div class="week">';
     days.forEach(function (d, i) {
       var dd = data[i], isToday = isos[i] === todayIso, ov = hasOverride(plan, mon, i);
