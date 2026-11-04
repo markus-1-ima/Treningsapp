@@ -27,6 +27,7 @@
     return Math.ceil(((t - y0) / 86400000 + 1) / 7);
   }
   var nf = function (n) { return Math.round(n).toLocaleString('nb-NO'); };
+  var exCount = function (n) { return n + (n === 1 ? ' øvelse' : ' øvelser'); };
   var fmtNum = function (n) { return (Math.round(n * 10) / 10).toLocaleString('nb-NO'); };
   var num = function (v) { var n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : 0; };
 
@@ -64,6 +65,22 @@
     s.last = s.last || {};
     s.rest = s.rest || 90;
     s.pr = (s.pr && typeof s.pr === 'object') ? s.pr : {};
+    // Ukeplaner ligger i planList. Det gamle feltet plans står urørt, så eldre versjoner av appen ikke ødelegger noe.
+    var toItems = function (w) { return okWeek(w).map(function (x) { return Array.isArray(x) ? x.filter(function (y) { return typeof y === 'string' && y; }) : (x ? [x] : []); }); };
+    if (!Array.isArray(s.planList) || !s.planList.length) {
+      s.planList = [
+        { id: 'a', name: 'Vanlig uke', week: toItems(s.plans.a.week), goal: s.plans.a.goal },
+        { id: 'h', name: 'Hjemmeuke', week: toItems(s.plans.h.week), goal: s.plans.h.goal }];
+      s.activePlan = s.active;
+    }
+    s.planList.forEach(function (pl) {
+      pl.id = pl.id || uid();
+      pl.name = typeof pl.name === 'string' ? pl.name : 'Plan';
+      pl.week = toItems(pl.week);
+      pl.goal = pl.goal > 0 ? pl.goal : 3;
+    });
+    if (!s.planList.some(function (pl) { return pl.id === s.activePlan; })) s.activePlan = s.planList[0].id;
+    s.over = (s.over && typeof s.over === 'object') ? s.over : {};
     var iv = s.iv || {};
     s.iv = {
       work: iv.work > 0 ? iv.work : 40,
@@ -75,14 +92,18 @@
   }
 
   var state = null;
-  function curPlan() { return state.plans[state.active]; }
+  function curPlan() {
+    for (var i = 0; i < state.planList.length; i++) if (state.planList[i].id === state.activePlan) return state.planList[i];
+    return state.planList[0];
+  }
   try { var raw = localStorage.getItem('tb_state'); if (raw) state = JSON.parse(raw); } catch (e) { }
   state = normalize(state || defaults());
   var sess = null;
   try { var rs = localStorage.getItem('tb_sess'); if (rs) sess = JSON.parse(rs); } catch (e) { }
 
   var view = 'uke', weekOffset = 0, armed = '', shownEx = {};
-  var iv = null, ivTimer = null, celebrate = null;   // intervalltimer som kjører, nye rekorder å vise
+  var iv = null, ivTimer = null, celebrate = null;
+  var editScope = 'all', managing = false;           // ukeplan: endre alle uker eller bare den viste, plan-meny åpen   // intervalltimer som kjører, nye rekorder å vise
   var touched = false, ref = null;
   var P = function (id) { return state.programs.filter(function (p) { return p.id === id; })[0]; };
   var todayIdx = function () { return (new Date().getDay() + 6) % 7; };
@@ -121,40 +142,157 @@
     return '<div class="hint"><span>Eksempelprogrammer er lagt inn for å vise hvordan det fungerer. Rediger dem eller slett det du ikke trenger.</span><button class="btn btn-sm" data-act="hint-x">Skjul</button></div>';
   }
 
+  /* ---------- ukeplaner ---------- */
+  function shownMon() { return addDays(startOfWeek(new Date()), weekOffset * 7); }
+  function overKey(plan, mon) { return plan.id + '|' + iso(mon); }
+  function hasOverride(plan, mon, i) { var o = state.over[overKey(plan, mon)]; return !!(o && o[i]); }
+  // Øktene for en dag: unntaket for den uka hvis det finnes, ellers planen.
+  function dayItems(plan, mon, i) { var o = state.over[overKey(plan, mon)]; return (o && o[i]) ? o[i] : plan.week[i]; }
+  // Listen som skal endres. «Bare denne uka» lager en kopi av dagen første gang den endres.
+  function editList(i) {
+    var plan = curPlan();
+    if (editScope !== 'week') return plan.week[i];
+    var k = overKey(plan, shownMon()), o = state.over[k] || (state.over[k] = {});
+    if (!o[i]) o[i] = plan.week[i].slice();
+    return o[i];
+  }
+  function itemInfo(x) {
+    if (x === 'iv') { var c = state.iv; return { name: 'Intervalltimer', kind: 'kondisjon', sub: c.work + '/' + c.rest + ' × ' + c.rounds }; }
+    var p = P(x);
+    return p ? { name: p.name, kind: p.kind, sub: exCount(p.exercises.length) } : null;
+  }
+  // Kobler planlagte økter mot det som er logget den dagen. Hver logget økt teller bare én gang.
+  function matchDay(items, dIso) {
+    var logs = state.log.filter(function (l) { return l.d === dIso; }), used = {};
+    var done = items.map(function (x) {
+      if (!itemInfo(x)) return null;
+      for (var k = 0; k < logs.length; k++) if (!used[k] && logs[k].pid === x) { used[k] = true; return logs[k]; }
+      return null;
+    });
+    return { done: done, extra: logs.filter(function (l, k) { return !used[k]; }) };
+  }
+  function nextPlanned(plan) {
+    var t0 = new Date();
+    for (var k = 1; k <= 7; k++) {
+      var d = addDays(t0, k), idx = (d.getDay() + 6) % 7;
+      var its = dayItems(plan, startOfWeek(d), idx).filter(function (x) { return !!itemInfo(x); });
+      if (its.length) return { d: d, idx: idx, items: its, k: k };
+    }
+    return null;
+  }
+
+  // Én planlagt økt: navn, type og enten status (gjort / ikke gjort) eller Start.
+  function itemRow(x, i, j, state_, canEdit) {
+    var info = itemInfo(x);
+    if (!info) return '';
+    var act = '';
+    if (state_ === 'done') act = '<span class="st st-ok">✓ Gjort</span>';
+    else if (state_ === 'miss') act = '<span class="st st-miss">Ikke gjort</span>';
+    else if (state_ === 'today') {
+      if (x === 'iv') act = iv ? '<button class="btn btn-sm" data-act="iv-open">Åpne</button>' : (sess ? '' : '<button class="btn btn-sm btn-primary" data-act="iv-open">Start</button>');
+      else if (sess && sess.pid === x) act = '<button class="btn btn-sm" data-act="start" data-p="' + esc(x) + '">Fortsett</button>';
+      else if (!sess && !iv) act = '<button class="btn btn-sm btn-primary" data-act="start" data-p="' + esc(x) + '">Start</button>';
+    }
+    if (canEdit) act += '<button class="icon-btn rm" data-act="day-rm" data-i="' + i + '" data-j="' + j + '" aria-label="Fjern ' + esc(info.name) + ' fra ' + DAYS_LONG[i].toLowerCase() + '">×</button>';
+    return '<div class="ditem is-' + state_ + '"><div class="dmain"><div class="pn">' + esc(info.name) + '</div><div class="dmeta">' + kindTag(info.kind) + ' <span class="sub">· ' + esc(info.sub) + '</span></div></div>' +
+      '<div class="dact">' + act + '</div></div>';
+  }
+  function itemState(done, dIso, todayIso) { return done ? 'done' : (dIso < todayIso ? 'miss' : (dIso === todayIso ? 'today' : 'later')); }
+
   function viewUke() {
-    var mon = addDays(startOfWeek(new Date()), weekOffset * 7);
+    var plan = curPlan(), mon = shownMon();
     var days = [0, 1, 2, 3, 4, 5, 6].map(function (i) { return addDays(mon, i); });
-    var isos = days.map(iso);
-    var doneN = state.log.filter(function (l) { return isos.indexOf(l.d) > -1; }).length;
-    var todayIso = iso(new Date());
-    var segs = '';
-    var cap = Math.min(curPlan().goal, 14);
-    for (var i = 0; i < cap; i++) segs += '<span class="seg' + (i < doneN ? ' on' : '') + '"></span>';
-    var h = '<div class="sec-head"><div><h2>Uke ' + isoWeek(mon) + '</h2><p class="sub">' + dateLabel(days[0]) + ' – ' + dateLabel(days[6]) + ' · planen gjentas hver uke</p></div>' +
+    var isos = days.map(iso), todayIso = iso(new Date());
+    var data = days.map(function (d, i) {
+      var items = dayItems(plan, mon, i), m = matchDay(items, isos[i]);
+      return { items: items, done: m.done, extra: m.extra };
+    });
+    var planned = 0, doneP = 0, missed = 0, extra = 0, segs = '';
+    data.forEach(function (dd, i) {
+      dd.items.forEach(function (x, j) {
+        if (!itemInfo(x)) return;
+        planned++;
+        var st = itemState(dd.done[j], isos[i], todayIso);
+        if (st === 'done') doneP++;
+        if (st === 'miss') missed++;
+        segs += '<span class="seg' + (st === 'done' ? ' on' : st === 'miss' ? ' miss' : '') + '"></span>';
+      });
+      extra += dd.extra.length;
+    });
+    var logged = state.log.filter(function (l) { return isos.indexOf(l.d) > -1; }).length;
+    var wk = isoWeek(mon);
+
+    var h = '<div class="sec-head"><div><h2>Uke ' + wk + '</h2><p class="sub">' + dateLabel(days[0]) + ' – ' + dateLabel(days[6]) + (weekOffset === 0 ? ' · denne uka' : '') + '</p></div>' +
       '<div class="weeknav"><button class="btn btn-sm" data-act="wk-prev" aria-label="Forrige uke">←</button>' +
       '<button class="btn btn-sm" data-act="wk-now"' + (weekOffset === 0 ? ' disabled' : '') + '>Denne uka</button>' +
       '<button class="btn btn-sm" data-act="wk-next" aria-label="Neste uke">→</button></div></div>';
-    h += '<div class="planswitch" role="group" aria-label="Velg ukeplan">' +
-      [['a', 'Vanlig uke'], ['h', 'Hjemmeuke']].map(function (x) { return '<button class="btn" data-act="plan-sw" data-k="' + x[0] + '" aria-pressed="' + (state.active === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</div>';
-    if (state.active === 'h' && curPlan().week.every(function (x) { return !x; })) {
-      h += '<div class="hint"><span>Hjemmeuka er tom. Velg program per dag, eller fyll den med et forslag av hjemmeøkter.</span><button class="btn btn-sm btn-primary" data-act="home-fill">Fyll med forslag</button></div>';
+
+    // Planvalg og administrasjon
+    h += '<div class="planbar"><div class="chips" role="group" aria-label="Velg ukeplan">' + state.planList.map(function (pl) {
+      return '<button class="chip" data-act="plan-sw" data-k="' + esc(pl.id) + '" aria-pressed="' + (pl.id === plan.id) + '">' + esc(pl.name || 'Uten navn') + '</button>';
+    }).join('') + '</div><button class="btn btn-sm btn-ghost" data-act="plan-manage" aria-expanded="' + managing + '">' + (managing ? 'Lukk' : 'Administrer planer') + '</button></div>';
+    if (managing) {
+      var only = state.planList.length < 2;
+      h += '<div class="panel planmanage"><div class="row"><label for="plan-name">Navn på planen<input id="plan-name" class="inp" data-f="plan-name" maxlength="40" value="' + esc(plan.name) + '"></label></div>' +
+        '<div class="row-actions"><button class="btn btn-sm" data-act="plan-new">+ Ny tom plan</button><button class="btn btn-sm" data-act="plan-copy">Kopier denne planen</button>' +
+        '<button class="btn btn-sm btn-ghost btn-danger" data-act="plan-del"' + (only ? ' disabled title="Du må ha minst én plan"' : '') + '>' + (armed === 'plan-del' ? 'Slett «' + esc(plan.name) + '» for godt?' : 'Slett planen') + '</button></div></div>';
+    }
+    if (plan.week.every(function (l) { return !l.length; })) {
+      h += '<div class="hint"><span>«' + esc(plan.name) + '» er tom. Legg til økter på dagene nedenfor, eller fyll uka med et forslag av hjemmeøkter.</span><button class="btn btn-sm btn-primary" data-act="home-fill">Fyll med hjemmeøkter</button></div>';
     }
     h += hintBox();
-    h += '<div class="panel goalbar"><div class="txt tnum">' + doneN + ' av ' + curPlan().goal + ' økter</div><div class="meter" aria-hidden="true">' + segs + '</div>' +
-      '<div class="stepper">Ukemål <button class="btn btn-sm" data-act="goal-dec" aria-label="Senk ukemål">−</button><b class="tnum">' + curPlan().goal + '</b><button class="btn btn-sm" data-act="goal-inc" aria-label="Øk ukemål">+</button></div></div>';
+
+    // I dag
+    if (weekOffset === 0) {
+      var ti = todayIdx(), tItems = data[ti].items.filter(function (x) { return !!itemInfo(x); });
+      h += '<section class="panel today" aria-labelledby="today-h"><div class="today-h"><h3 id="today-h">I dag</h3><span class="sub">' + DAYS_LONG[ti] + ' ' + dateLabel(days[ti]) + '</span></div>';
+      if (sess) h += '<p>Du har en økt i gang: <b>' + esc(sess.name) + '</b>. <button class="btn btn-sm" data-act="go-okt">Fortsett økta</button></p>';
+      else if (iv) h += '<p>Intervalltimeren går. <button class="btn btn-sm" data-act="iv-open">Åpne timeren</button></p>';
+      if (tItems.length) {
+        h += '<div class="ditems">';
+        data[ti].items.forEach(function (x, j) { h += itemRow(x, ti, j, itemState(data[ti].done[j], isos[ti], todayIso), false); });
+        h += '</div>';
+      } else {
+        var nx = nextPlanned(plan);
+        h += '<p class="sub">Hviledag i dag.' + (nx ? ' Neste: <b>' + nx.items.map(function (x) { return esc(itemInfo(x).name); }).join(' og ') + '</b> ' + (nx.k === 1 ? 'i morgen' : 'på ' + DAYS_LONG[nx.idx].toLowerCase()) + '.' : ' Ingen økter planlagt den neste uka.') + '</p>';
+      }
+      if (data[ti].extra.length) h += '<div class="extras">' + data[ti].extra.map(function (l) { return '<span class="done-tag">✓ ' + esc(l.name) + ' · ' + l.min + ' min</span>'; }).join('') + '</div>';
+      h += '</section>';
+    }
+
+    // Fremdrift for uka
+    var goal = plan.goal;
+    if (planned) {
+      h += '<div class="panel goalbar"><div class="txt tnum">' + doneP + ' av ' + planned + ' planlagt</div><div class="meter" aria-hidden="true">' + segs + '</div>';
+    } else {
+      var gs = '';
+      for (var g = 0; g < Math.min(goal, 14); g++) gs += '<span class="seg' + (g < logged ? ' on' : '') + '"></span>';
+      h += '<div class="panel goalbar"><div class="txt tnum">' + logged + ' av ' + goal + ' økter</div><div class="meter" aria-hidden="true">' + gs + '</div>';
+    }
+    h += '<div class="stepper">Ukemål <button class="btn btn-sm" data-act="goal-dec" aria-label="Senk ukemål">−</button><b class="tnum">' + goal + '</b><button class="btn btn-sm" data-act="goal-inc" aria-label="Øk ukemål">+</button></div>';
+    var notes = [];
+    if (missed) notes.push(missed + ' ikke gjort');
+    if (extra) notes.push(extra + (extra === 1 ? ' ekstra økt' : ' ekstra økter'));
+    notes.push(logged + ' av ukemålet på ' + goal + (logged >= goal ? ' · ukemålet er nådd' : ''));
+    h += '<p class="goalnote">' + notes.join(' · ') + '</p></div>';
+
+    // Hva endringer gjelder
+    h += '<div class="scopebar"><span class="sub">Endringer gjelder</span><div class="planswitch" role="group" aria-label="Hva endringer gjelder">' +
+      '<button class="btn" data-act="scope" data-k="all" aria-pressed="' + (editScope === 'all') + '">Alle uker</button>' +
+      '<button class="btn" data-act="scope" data-k="week" aria-pressed="' + (editScope === 'week') + '">Bare uke ' + wk + '</button></div></div>';
+
+    // Dagene
+    var opts = '<option value="">+ Legg til økt</option>' + state.programs.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + '</option>'; }).join('') + '<option value="iv">Intervalltimer</option>';
     h += '<div class="week">';
     days.forEach(function (d, i) {
-      var pid = curPlan().week[i], prog = pid ? P(pid) : null;
-      var isToday = isos[i] === todayIso;
-      var done = state.log.filter(function (l) { return l.d === isos[i]; });
+      var dd = data[i], isToday = isos[i] === todayIso, ov = hasOverride(plan, mon, i);
       var body = '';
-      if (prog) body += '<div class="pn">' + esc(prog.name) + '</div>' + kindTag(prog.kind) + '<div class="sub">' + prog.exercises.length + ' øvelser</div>';
-      else body += '<div class="rest-day">Hviledag</div>';
-      done.forEach(function (l) { body += '<span class="done-tag">✓ ' + esc(l.name) + ' · ' + l.min + ' min</span>'; });
-      var opts = '<option value="">Hvile</option>' + state.programs.map(function (p) { return '<option value="' + esc(p.id) + '"' + (p.id === pid ? ' selected' : '') + '>' + esc(p.name) + '</option>'; }).join('');
-      var foot = '<select class="inp" data-f="plan" data-i="' + i + '" aria-label="Program for ' + DAYS_LONG[i] + '">' + opts + '</select>';
-      if (isToday && prog && !sess) foot += '<button class="btn btn-primary" data-act="start" data-p="' + esc(prog.id) + '">Start</button>';
-      h += '<article class="day' + (isToday ? ' is-today' : '') + '"><div class="day-head"><span class="dow">' + DAYS[i] + '</span><span class="dnum tnum">' + d.getDate() + '</span>' + (isToday ? '<span class="today-tag">I dag</span>' : '') + '</div>' +
+      dd.items.forEach(function (x, j) { body += itemRow(x, i, j, itemState(dd.done[j], isos[i], todayIso), true); });
+      if (!dd.items.some(function (x) { return !!itemInfo(x); })) body += '<div class="rest-day">Hviledag</div>';
+      dd.extra.forEach(function (l) { body += '<span class="done-tag">✓ ' + esc(l.name) + ' · ' + l.min + ' min</span>'; });
+      var foot = '<select class="inp" data-f="day-add" data-i="' + i + '" aria-label="Legg til økt på ' + DAYS_LONG[i].toLowerCase() + '">' + opts + '</select>';
+      if (ov) foot += '<button class="linkbtn" data-act="day-reset" data-i="' + i + '">Tilbakestill til planen</button>';
+      h += '<article class="day' + (isToday ? ' is-today' : '') + (ov ? ' is-over' : '') + '"><div class="day-head"><span class="dow">' + DAYS[i] + '</span><span class="dnum tnum">' + d.getDate() + '</span>' + (isToday ? '<span class="today-tag">I dag</span>' : '') + (ov ? '<span class="ovtag">Bare denne uka</span>' : '') + '</div>' +
         '<div class="day-body">' + body + '</div><div class="day-foot">' + foot + '</div></article>';
     });
     return h + '</div>';
@@ -175,13 +313,13 @@
   function viewOkt() {
     if (!sess && iv) return viewInterval();
     if (!sess) {
-      var plannedId = curPlan().week[todayIdx()];
+      var plannedIds = dayItems(curPlan(), startOfWeek(new Date()), todayIdx());
       var h = ivSetup();
       h += '<div class="sec-head"><div><h2>Start en økt</h2><p class="sub">Velg et program. Vekter og reps fylles inn fra forrige gang.</p></div></div>';
       if (!state.programs.length) return h + '<p class="empty">Du har ingen programmer ennå. Lag ett under Programmer.</p>';
       h += '<div class="sess-list">';
       state.programs.forEach(function (p) {
-        h += '<article class="panel pick"><div><div class="pn">' + esc(p.name) + (p.id === plannedId ? '<span class="badge">Planlagt i dag</span>' : '') + '</div>' + kindTag(p.kind) + ' <span class="sub">· ' + p.exercises.length + ' øvelser</span></div>' +
+        h += '<article class="panel pick"><div><div class="pn">' + esc(p.name) + (plannedIds.indexOf(p.id) > -1 ? '<span class="badge">Planlagt i dag</span>' : '') + '</div>' + kindTag(p.kind) + ' <span class="sub">· ' + p.exercises.length + ' øvelser</span></div>' +
           '<button class="btn btn-primary" data-act="start" data-p="' + esc(p.id) + '">Start økt</button></article>';
       });
       return h + '</div>';
@@ -653,7 +791,7 @@
   }
   function ivLog() {
     var c = state.iv;
-    state.log.unshift({ id: uid(), d: iso(new Date()), name: 'Intervaller ' + c.work + '/' + c.rest, kind: 'kondisjon',
+    state.log.unshift({ id: uid(), d: iso(new Date()), pid: 'iv', name: 'Intervaller ' + c.work + '/' + c.rest, kind: 'kondisjon',
       min: Math.max(1, Math.round((iv.stopped - iv.start) / 60000)), vol: 0, n: iv.doneRounds, unit: iv.doneRounds === 1 ? 'runde' : 'runder' });
     state.log = state.log.slice(0, 400);
     save();
@@ -679,7 +817,7 @@
     var t = e.target.closest('[data-act]');
     if (!t) return;
     var a = t.dataset.act, p, ex;
-    var keep = (a === 'del-prog' || a === 'del-log' || a === 'cancel' || a === 'iv-stop');
+    var keep = (a === 'del-prog' || a === 'del-log' || a === 'cancel' || a === 'iv-stop' || a === 'plan-del');
     if (!keep && armed) armed = '';
     switch (a) {
       case 'wk-prev': weekOffset--; render(); break;
@@ -734,10 +872,38 @@
       case 'iv-close':
         iv = null; if (t.dataset.to) go(t.dataset.to); else render(); break;
       case 'rest-stop': stopRest(); break;
-      case 'plan-sw': state.active = t.dataset.k === 'h' ? 'h' : 'a'; save(); render(); break;
+      case 'plan-sw': state.activePlan = t.dataset.k; save(); render(); break;
+      case 'plan-manage': managing = !managing; render(); break;
+      case 'plan-new': case 'plan-copy': {
+        var src = curPlan(), np = { id: uid(), name: a === 'plan-new' ? 'Ny plan' : (src.name + ' (kopi)').slice(0, 40), goal: src.goal,
+          week: a === 'plan-new' ? [[], [], [], [], [], [], []] : src.week.map(function (l) { return l.slice(); }) };
+        state.planList.push(np); state.activePlan = np.id; managing = true;
+        save(); render();
+        var ni = $('#plan-name'); if (ni) { ni.focus(); ni.select(); }
+        break;
+      }
+      case 'plan-del': {
+        if (state.planList.length < 2) break;
+        if (armed !== 'plan-del') { armed = 'plan-del'; render(); break; }
+        armed = '';
+        var gone = curPlan().id;
+        state.planList = state.planList.filter(function (pl) { return pl.id !== gone; });
+        Object.keys(state.over).forEach(function (k) { if (k.indexOf(gone + '|') === 0) delete state.over[k]; });
+        state.activePlan = state.planList[0].id;
+        save(); render(); break;
+      }
+      case 'scope': editScope = t.dataset.k === 'week' ? 'week' : 'all'; render(); break;
+      case 'day-rm': editList(+t.dataset.i).splice(+t.dataset.j, 1); save(); render(); break;
+      case 'day-reset': {
+        var ok = overKey(curPlan(), shownMon()), ovr = state.over[ok];
+        if (ovr) { delete ovr[t.dataset.i]; if (!Object.keys(ovr).length) delete state.over[ok]; }
+        save(); render(); break;
+      }
+      case 'iv-open': go('okt'); break;
+      case 'go-okt': go('okt'); break;
       case 'home-fill': {
         var sug = [0, 4, null, 1, 2, 3, 5];
-        state.plans.h.week = sug.map(function (i) { return i === null ? null : homeProgram(i).id; });
+        curPlan().week = sug.map(function (i) { return i === null ? [] : [homeProgram(i).id]; });
         save(); render(); break;
       }
       case 'show-ex': {
@@ -764,9 +930,9 @@
         if (armed !== key) { armed = key; render(); break; }
         armed = '';
         state.programs = state.programs.filter(function (x) { return x.id !== t.dataset.p; });
-        ['a', 'h'].forEach(function (k) {
-          state.plans[k].week = state.plans[k].week.map(function (x) { return x === t.dataset.p ? null : x; });
-        });
+        var drop = function (l) { return l.filter(function (x) { return x !== t.dataset.p; }); };
+        state.planList.forEach(function (pl) { pl.week = pl.week.map(drop); });
+        Object.keys(state.over).forEach(function (k) { var o = state.over[k]; Object.keys(o).forEach(function (d) { o[d] = drop(o[d]); }); });
         save(); render(); break;
       }
       case 'del-log': {
@@ -787,7 +953,13 @@
     var p = t.dataset.p ? P(t.dataset.p) : null, ex;
     if (p && t.dataset.e) ex = p.exercises.filter(function (x) { return x.id === t.dataset.e; })[0];
     switch (f) {
-      case 'plan': curPlan().week[+t.dataset.i] = t.value || null; save(); render(); break;
+      case 'day-add': if (t.value) { editList(+t.dataset.i).push(t.value); save(); render(); } break;
+      case 'plan-name': {
+        curPlan().name = t.value.slice(0, 40); save();
+        var chip = document.querySelector('[data-act="plan-sw"][aria-pressed="true"]');
+        if (chip) chip.textContent = curPlan().name || 'Uten navn';
+        break;
+      }
       case 'pname': if (p) { p.name = t.value; save(); } break;
       case 'pkind': if (p) { p.kind = t.value; save(); render(); } break;
       case 'en': if (ex) { ex.name = t.value; save(); } break;
