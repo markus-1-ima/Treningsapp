@@ -92,10 +92,11 @@
       { h: [70, 102], t: -14, d: -28, a: [140, 82], f: [10, 86], fa: 180 }] },
 
     // ---------- Kondisjon ----------
-    { name: 'Jumping jacks', hi: ['legs', 'arms'], front: true, tl: 6, seg: 0.28, k: [1, -1], e: [1, -1], p: [
-      { h: [100, 53], t: -90, a: [89, 60], b: [111, 60], f: [94, 104], g: [106, 104], fa: 180, ga: 0 },
-      { h: [100, 55], t: -90, a: [58, 25], b: [142, 25], f: [86, 104], g: [114, 104], fa: 180, ga: 0 },
-      { h: [100, 57], t: -90, a: [84, -6], b: [116, -6], f: [78, 104], g: [122, 104], fa: 180, ga: 0 }] },
+    // Hvert bytte går via et hopp (midterste stilling), føttene lander samlet eller brede.
+    { name: 'Jumping jacks', hi: ['legs', 'arms'], front: true, jump: true, tl: 6, seg: 0.26, k: [1, -1], e: [1, -1], p: [
+      { h: [100, 54], t: -90, a: [89, 61], b: [111, 61], f: [94, 104], g: [106, 104], fa: 180, ga: 0 },
+      { h: [100, 41], t: -90, a: [58, 13], b: [142, 13], f: [87, 90], g: [113, 90], fa: 120, ga: 60 },
+      { h: [100, 58], t: -90, a: [84, -6], b: [116, -6], f: [78, 104], g: [122, 104], fa: 180, ga: 0 }] },
 
     { name: 'Høye knær', hi: ['legs'], cycle: true, seg: 0.24, p: [
       { h: [100, 54], t: -88, a: [118, 38], b: [84, 38], f: [100, 104], g: [121, 79], fa: 0, ga: 30 },
@@ -103,12 +104,14 @@
       { h: [100, 54], t: -88, a: [84, 38], b: [118, 38], f: [121, 79], g: [100, 104], fa: 30, ga: 0 },
       { h: [100, 53], t: -88, a: [92, 46], b: [108, 46], f: [100, 104], g: [100, 104], fa: 0, ga: 0 }] },
 
-    { name: 'Burpees', hi: ['legs', 'arms'], cycle: true, seg: 0.75, p: [
+    // Stå, hender i gulvet, planke, tilbake, sats, hopp med armene over hodet, land.
+    { name: 'Burpees', hi: ['legs', 'arms'], cycle: true, jump: true, seg: 0.6, p: [
       { h: [96, 53], t: -90, a: [98, 58], b: [92, 58], f: [96, 104], fa: 0 },
       { h: [80, 84], t: -10, a: [124, 104], b: [118, 104], f: [96, 104], fa: 0 },
       { h: [89.9, 80.4], t: -16.3, a: [119, 104], b: [115, 104], f: [40, 95], fa: 80 },
       { h: [80, 84], t: -10, a: [124, 104], b: [118, 104], f: [96, 104], fa: 0 },
-      { h: [96, 50], t: -90, a: [112, -14], b: [80, -14], f: [96, 100], fa: 30 }] },
+      { h: [90, 68], t: -75, a: [86, 66], b: [82, 66], f: [96, 104], fa: 0 },
+      { h: [96, 34], t: -90, a: [112, -30], b: [80, -30], f: [96, 84], fa: 70 }] },
 
     // ---------- Mobilitet ----------
     { name: 'Katt-ku', hi: ['core'], seg: 1.6, p: [
@@ -200,7 +203,7 @@
     var fx = ex.flip ? function (x) { return 200 - x; } : function (x) { return x; };
     var pts = [];
     var P = function (q) { pts.push([fx(q[0]), q[1]]); return r1(fx(q[0])) + ' ' + r1(q[1]); };
-    var parts = { torso: '', a: '', b: '', f: '', g: '' };
+    var parts = { torso: '', a: '', b: '', f: '', g: '' }, low = -1e9;
 
     // Skuldre og hofter: i sidebilde ett punkt, forfra to punkter ved siden av hverandre.
     var sa = neck, sb = neck, hf = hip, hg = hip;
@@ -223,7 +226,12 @@
       if (!foot) return;
       var r = ik(s, foot, L.thigh, L.shin, dir);
       var str = 'M' + P(s) + 'L' + P(r[0]) + 'L' + P(r[1]);
-      if (ex.toe !== false) str += 'L' + P([r[1][0] + ex.tl * Math.cos(ang * R), r[1][1] + ex.tl * Math.sin(ang * R)]);
+      low = Math.max(low, r[1][1]);
+      if (ex.toe !== false) {
+        var toe = [r[1][0] + ex.tl * Math.cos(ang * R), r[1][1] + ex.tl * Math.sin(ang * R)];
+        low = Math.max(low, toe[1]);
+        str += 'L' + P(toe);
+      }
       parts[key] = str;
     }
     arm('a', sa, p.a, ex.e[0]); arm('b', sb, p.b, ex.e[1]);
@@ -235,6 +243,8 @@
     nearKeys.forEach(function (k) { out[ex.hiSet[k] ? 'nearHi' : 'near'] += parts[k]; });
     farKeys.forEach(function (k) { out[ex.hiSet[k] ? 'farHi' : 'far'] += parts[k]; });
     out.hx = r1(fx(head[0])); out.hy = r1(head[1]);
+    var lift = Math.max(0, (GY - 2) - low);                            // hvor høyt føttene er over bakken
+    out.sx = r1(fx(hip[0])); out.srx = r1(Math.max(5, 15 - lift * 0.45)); out.so = r1(Math.max(0.08, 0.32 - lift * 0.012) * 100) / 100;
     pts.push([fx(head[0]) - HEAD_R, head[1] - HEAD_R], [fx(head[0]) + HEAD_R, head[1] + HEAD_R]);
     out.pts = pts;
     return out;
@@ -275,6 +285,8 @@
     pnh.setAttribute('d', s.nearHi);
     hd.setAttribute('cx', s.hx);
     hd.setAttribute('cy', s.hy);
+    var sh = q('sh');
+    if (sh) { sh.setAttribute('cx', s.sx); sh.setAttribute('rx', s.srx); sh.setAttribute('opacity', s.so); }
   }
 
   function refresh() {
@@ -298,6 +310,7 @@
       ' role="img" aria-label="Animasjon av ' + esc(ex.name.toLowerCase()) + '">' +
       '<svg viewBox="' + ex.vb.join(' ') + '" aria-hidden="true" focusable="false">' +
       '<line class="gnd" x1="' + (ex.vb[0] - 20) + '" y1="' + GY + '" x2="' + (ex.vb[0] + ex.vb[2] + 20) + '" y2="' + GY + '"/>' + ex.props +
+      (ex.jump ? '<ellipse class="sh" cx="-50" cy="' + (GY + 1) + '" rx="10" ry="2.2"/>' : '') +
       '<path class="lf" d=""/><path class="lfh" d=""/><path class="ln" d=""/><path class="lnh" d=""/>' +
       '<circle class="hd" r="' + HEAD_R + '" cx="-50" cy="-50"/></svg></div>';
   }

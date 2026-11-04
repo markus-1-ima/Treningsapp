@@ -274,5 +274,6 @@ select.inp { background: var(--surface); }
 .anim .prop { stroke: var(--muted); stroke-width: 4px; opacity: .45; }
 .anim .wall { stroke-width: 6px; }
 .anim .solid { fill: var(--line); }
+.anim .sh { fill: var(--muted); stroke: none; }
 .ex-anim { max-width: 360px; }
 .libcard .anim { margin-bottom: 4px; }
