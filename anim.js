@@ -180,10 +180,25 @@
     if (!q) return p;
     return [p[0] + (q[0] - p[0]) * g, p[1] + (q[1] - p[1]) * g];
   }
-  function mix(a, b, g) {
+  function mix(a, b, g, ex) {
     var o = {};
     ['h', 'a', 'b', 'f', 'g'].forEach(function (k) { o[k] = lerpPt(a[k], b[k], g); });
     ['t', 'd', 'bw', 'fa', 'ga'].forEach(function (k) { o[k] = a[k] + (b[k] - a[k]) * g; });
+    // Forfra svinger armene i en bue rundt skulderen, i stedet for at hånden går i rett linje og knekker albuen.
+    if (ex && ex.front) {
+      var sh = function (p, side) { return [p.h[0] + L.torso * Math.cos(p.t * R) + side * 6, p.h[1] + L.torso * Math.sin(p.t * R) + 2]; };
+      [['a', -1], ['b', 1]].forEach(function (k) {
+        var key = k[0], side = k[1];
+        if (!a[key] || !b[key]) return;
+        var sa = sh(a, side), sb = sh(b, side), so = sh(o, side);
+        var va = [a[key][0] - sa[0], a[key][1] - sa[1]], vb = [b[key][0] - sb[0], b[key][1] - sb[1]];
+        var aa = Math.atan2(va[1], va[0]), ab = Math.atan2(vb[1], vb[0]), dA = ab - aa;
+        while (dA > Math.PI) dA -= 2 * Math.PI;
+        while (dA < -Math.PI) dA += 2 * Math.PI;
+        var ang = aa + dA * g, r = Math.hypot(va[0], va[1]) + (Math.hypot(vb[0], vb[1]) - Math.hypot(va[0], va[1])) * g;
+        o[key] = [so[0] + r * Math.cos(ang), so[1] + r * Math.sin(ang)];
+      });
+    }
     return o;
   }
 
@@ -200,7 +215,7 @@
     }
     var g = Math.min(1, Math.max(0, (s - 0.12) / 0.76));   // liten pause i endestillingene
     g = g * g * (3 - 2 * g);
-    return mix(ex.p[i], ex.p[j], g);
+    return mix(ex.p[i], ex.p[j], g, ex);
   }
 
   // Skjelettet for én stilling: alle leddpunkter i 2D (etter eventuell speiling).
@@ -495,6 +510,18 @@
       if (!J) return;
       var z = s3;
       var S = front ? V(J[0], 0) : V(J[0], z), E = V(J[1], z), H = V(J[2], z);
+      if (front && !isArm) {
+        // Forfra bøyer knærne seg fremover mot kameraet, ikke ut til siden, og tærne peker fremover.
+        var dv = sub(H, S), d = len(dv), u = norm(dv), mx = L.thigh + L.shin, dd = Math.min(d, mx - 0.01);
+        var hh = Math.sqrt(Math.max(0, L.thigh * L.thigh - dd * dd / 4));
+        if (d > mx * 0.93) hh *= Math.max(0, (mx - d) / (mx * 0.07));
+        var fw = norm(sub([0, 0, 1], [u[0] * u[2], u[1] * u[2], u[2] * u[2]]));
+        H = add3(S, u, dd);
+        E = add3(add3(S, u, dd / 2), fw, hh);
+        var lift = Math.max(0, Math.min(1, ((GY - 2) - J[2][1]) / 12)), pitch = lift * 50 * R;
+        J = [J[0], J[1], J[2], null];
+        var T0 = add3(H, [0, -Math.sin(pitch), Math.cos(pitch)], 8);
+      }
       if (isArm) {
         push('sph', mSph(S, 3.2), key);
         push('cyl', mBone(S, E), key, [2.9, 2.4]);
@@ -507,7 +534,8 @@
         push('sph', mSph(E, 3.15), key);
         push('cyl', mBone(E, H), key, [3.0, 2.2]);
         push('sph', mSph(H, 2.3), key);
-        if (J[3]) { var T = V(J[3], z); push('cyl', mBone(H, T), key, [2.2, 1.6]); push('sph', mSph(T, 1.6), key); }
+        var T = J[3] ? V(J[3], z) : (front ? T0 : null);
+        if (T) { push('cyl', mBone(H, T), key, [2.2, 1.6]); push('sph', mSph(T, 1.6), key); }
       }
     }
     limbSet('b', 'a', -zA, true); limbSet('g', 'f', -zL, false);
