@@ -6,6 +6,13 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 
 ## Torsdag 5. november 2026
 
+**Lagring rettet**
+- Økter kunne forsvinne i den installerte appen hvis den ble lukket rett etter «Fullfør økt». Nå tas de vare på og sendes til kontoen neste gang appen åpnes.
+- Endringer sendes til kontoen med en gang appen legges bort eller lukkes, ikke først etter en liten stund.
+- Har noe ikke rukket å bli lagret, slås det sammen med kontoen i stedet for å bli overskrevet. Økter fra andre enheter blir med, og slettede økter kommer ikke tilbake.
+- Starter du appen uten nett, hentes kontoen og slås sammen med det du har gjort før noe sendes når nettet er tilbake.
+- «Logg ut» venter til det som ikke er lagret ennå er sendt.
+
 **Bedre økter**
 - Alle sett lagres nå med vekt og reps, så appen husker nøyaktig hva du gjorde.
 - «Sist»-linje under hver øvelse viser hva du gjorde forrige gang.

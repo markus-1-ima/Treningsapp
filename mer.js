@@ -151,6 +151,7 @@
     TB.setArmed('');
     var st = TB.state();
     st.body = st.body.filter(function (b) { return b.id !== t.dataset.id; });
+    st.del.push(t.dataset.id);
     TB.save(); TB.render();
   }, true);
 

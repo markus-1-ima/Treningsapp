@@ -73,6 +73,7 @@
       name: typeof st0.name === 'string' ? st0.name : ''
     };
     s.body = Array.isArray(s.body) ? s.body : [];
+    s.del = Array.isArray(s.del) ? s.del.slice(-300) : [];       // id-er til slettede økter og målinger, så de ikke kommer tilbake ved sammenslåing
     // Ukeplaner ligger i planList. Det gamle feltet plans står urørt, så eldre versjoner av appen ikke ødelegger noe.
     var toItems = function (w) { return okWeek(w).map(function (x) { return Array.isArray(x) ? x.filter(function (y) { return typeof y === 'string' && y; }) : (x ? [x] : []); }); };
     if (!Array.isArray(s.planList) || !s.planList.length) {
@@ -121,23 +122,68 @@
   /* ---------- persistence ---------- */
   var syncLabels = { loading: 'Henter …', saving: 'Lagrer …', saved: 'Lagret', local: 'Lagret lokalt', error: 'Kunne ikke lagre', offline: 'Frakoblet – lagres senere' };
   function setSync(k) { var el = $('#sync'); if (el) { el.textContent = syncLabels[k]; el.setAttribute('data-state', k); } }
-  var saveT = null, saving = false, again = false;
+  var saveT = null, saving = false, again = false, changes = 0, owner = null, needMerge = false;
+  // tb_dirty = konto-id når det finnes endringer på denne enheten som ikke er bekreftet lagret på kontoen.
+  // Lukkes appen før lagringen er ferdig, slås endringene sammen med kontoen neste gang i stedet for å bli overskrevet.
+  function setDirty(on) { try { if (on && owner) localStorage.setItem('tb_dirty', owner); else if (!on) localStorage.removeItem('tb_dirty'); } catch (e) { } }
   function save() {
-    touched = true;
+    touched = true; changes++;
+    state.saved = Date.now();
     try { localStorage.setItem('tb_state', JSON.stringify(state)); } catch (e) { }
     if (!ref) { setSync('local'); return; }
-    setSync('saving');
+    setDirty(true);
+    setSync(navigator.onLine === false ? 'offline' : 'saving');
     clearTimeout(saveT);
     saveT = setTimeout(flush, 700);
   }
   function flush() {
-    if (!ref) return;
+    clearTimeout(saveT); saveT = null;
+    if (!ref || needMerge) return;
     if (saving) { again = true; return; }
     saving = true;
-    ref.set(JSON.parse(JSON.stringify(state))).then(function () { setSync('saved'); }, function () { setSync('error'); }).then(function () {
+    var at = changes, r = ref;
+    r.set(JSON.parse(JSON.stringify(state))).then(function () {
+      if (r !== ref) return;
+      if (changes === at) { setDirty(false); setSync('saved'); }
+    }, function () { setSync(navigator.onLine === false ? 'offline' : 'error'); }).then(function () {
       saving = false;
       if (again) { again = false; flush(); }
     });
+  }
+  // Send endringene med en gang appen legges bort eller lukkes, ikke først etter ventetiden
+  function flushNow() { if (saveT) flush(); }
+  document.addEventListener('visibilitychange', function () { if (document.hidden) flushNow(); });
+  window.addEventListener('pagehide', flushNow);
+
+  // Slår sammen dataene på kontoen med endringer fra denne enheten som ikke rakk å bli lagret.
+  // Det som er endret sist vinner for planer og innstillinger. Økter, målinger og rekorder fra begge tas med.
+  function mergeStates(remote, local) {
+    // Ble alt slettet eller gjenopprettet fra fil etter at den andre siden sist ble lagret, gjelder det uten sammenslåing
+    if (local.wipe && local.wipe >= (remote.saved || 0)) return local;
+    if (remote.wipe && remote.wipe >= (local.saved || 0)) return remote;
+    var newer = (local.saved || 0) >= (remote.saved || 0), base = newer ? local : remote, other = newer ? remote : local;
+    var out = JSON.parse(JSON.stringify(base)), gone = {};
+    out.del = (base.del || []).concat((other.del || []).filter(function (id) { return (base.del || []).indexOf(id) < 0; })).slice(-300);
+    out.del.forEach(function (id) { gone[id] = true; });
+    var seen = {};
+    out.log = out.log.concat(other.log || []).filter(function (l) {
+      if (!l || gone[l.id] || seen[l.id]) return false;
+      seen[l.id] = true; return true;
+    });
+    out.log.sort(function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; });
+    out.log = out.log.slice(0, 600);
+    var days = {};
+    out.body = out.body.filter(function (b) { return !gone[b.id]; });
+    out.body.forEach(function (b) { days[b.d] = true; });
+    (other.body || []).forEach(function (b) { if (!gone[b.id] && !days[b.d]) { out.body.push(b); days[b.d] = true; } });
+    out.body.sort(function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; });
+    Object.keys(other.pr || {}).forEach(function (k) {
+      var a = other.pr[k], b = out.pr[k];
+      if (a && (!b || prBetter(a.type, a, b))) out.pr[k] = a;
+    });
+    Object.keys(other.last || {}).forEach(function (k) { if (!out.last[k]) out.last[k] = other.last[k]; });
+    out.saved = Math.max(base.saved || 0, other.saved || 0);
+    return normalize(out);
   }
   function saveDraft() {
     try { if (sess) localStorage.setItem('tb_sess', JSON.stringify(sess)); else localStorage.removeItem('tb_sess'); } catch (e) { }
@@ -1187,6 +1233,7 @@
         if (armed !== k2) { armed = k2; render(); break; }
         armed = '';
         state.log = state.log.filter(function (x) { return x.id !== t.dataset.id; });
+        state.del.push(t.dataset.id);
         save(); render(); break;
       }
       default:
@@ -1309,10 +1356,21 @@
       }, function (err) { authMsg(AUTH_ERR[err && err.code] || AUTH_ERR.other); });
     });
     byId('logout').addEventListener('click', function () {
-      try { localStorage.removeItem('tb_state'); localStorage.removeItem('tb_sess'); localStorage.removeItem('tb_owner'); } catch (e) { }
-      sess = null; ref = null; clearTimeout(saveT); stopRest();
-      state = normalize(defaults());   // ingen data skal følge med til neste bruker
-      auth.signOut();
+      var btn = this, pend = false;
+      try { pend = !!localStorage.getItem('tb_dirty'); } catch (e) { }
+      var done = function () {
+        try { localStorage.removeItem('tb_state'); localStorage.removeItem('tb_sess'); localStorage.removeItem('tb_owner'); localStorage.removeItem('tb_dirty'); } catch (e) { }
+        sess = null; ref = null; owner = null; needMerge = false; clearTimeout(saveT); saveT = null; stopRest();
+        state = normalize(defaults());   // ingen data skal følge med til neste bruker
+        btn.disabled = false;
+        auth.signOut();
+      };
+      if (!pend || !ref) { done(); return; }
+      // Lagre det som ikke er lagret ennå før du logges ut (vent høyst fem sekunder)
+      btn.disabled = true; setSync('saving');
+      var fin = false, once = function () { if (!fin) { fin = true; done(); } };
+      ref.set(JSON.parse(JSON.stringify(state))).then(once, once);
+      setTimeout(once, 5000);
     });
     auth.onAuthStateChanged(function (u) { if (u) signedIn(u); else signedOut(); });
   }
@@ -1329,12 +1387,16 @@
     byId('auth-load').textContent = 'Laster dataene dine …';
     var docRef = fsdb.doc('users/' + u.uid);
     docRef.get().then(function (snap) {
-      var owner = null;
-      try { owner = localStorage.getItem('tb_owner'); } catch (e) { }
-      var foreign = !!owner && owner !== u.uid;       // lokale data tilhører en annen konto
+      var prev = null, dirty = null;
+      try { prev = localStorage.getItem('tb_owner'); dirty = localStorage.getItem('tb_dirty'); } catch (e) { }
+      var foreign = !!prev && prev !== u.uid;         // lokale data tilhører en annen konto
+      var unsynced = !foreign && dirty === u.uid;     // endringer herfra som ikke rakk å bli lagret på kontoen
       if (foreign) { sess = null; saveDraft(); }
-      if (snap.exists) state = normalize(JSON.parse(JSON.stringify(snap.data())));
-      else if (foreign) state = normalize(defaults());
+      owner = u.uid;
+      if (snap.exists) {
+        var remote = normalize(JSON.parse(JSON.stringify(snap.data())));
+        state = unsynced ? mergeStates(remote, state) : remote;
+      } else if (foreign) state = normalize(defaults());
       // ellers: ny konto uten skydata, så dataene fra denne enheten tas med
       ref = docRef;
       try { localStorage.setItem('tb_owner', u.uid); localStorage.setItem('tb_state', JSON.stringify(state)); } catch (e) { }
@@ -1342,12 +1404,12 @@
       out.hidden = false; out.title = u.email || '';
       showApp();
       route();
-      if (snap.exists) setSync('saved'); else save();
+      if (snap.exists && !unsynced) { setDirty(false); setSync('saved'); } else save();
     }, function (err) {
       var owner0 = null, local0 = null;
       try { owner0 = localStorage.getItem('tb_owner'); local0 = localStorage.getItem('tb_state'); } catch (e) { }
       if (owner0 === u.uid && local0) {
-        state = normalize(JSON.parse(local0)); ref = docRef;
+        state = normalize(JSON.parse(local0)); ref = docRef; owner = u.uid; needMerge = true;
         var out0 = byId('logout'); out0.hidden = false; out0.title = u.email || '';
         showApp(); route(); setSync('offline');
         return;
@@ -1372,7 +1434,7 @@
     beep: beep, buzz: buzz, ensureAudio: ensureAudio, DAYS: DAYS, DAYS_LONG: DAYS_LONG, MONTHS: MONTHS, RATE: RATE,
     e1rm: e1rm, exKey: exKey, exHistory: exHistory, streakWeeks: streakWeeks, weekStats: weekStats, groupOf: groupOf, lineChart: lineChart, volText: volText,
     defaults: defaults,
-    replaceState: function (obj) { state = normalize(obj); save(); },
+    replaceState: function (obj) { state = normalize(obj); state.wipe = Date.now(); save(); },
     page: function (name, fn, navTab) { EXT.views[name] = fn; if (VIEWS.indexOf(name) < 0) VIEWS.push(name); EXT.nav[name] = navTab || name; },
     action: function (name, fn, keepArmed) { EXT.actions[name] = fn; if (keepArmed) EXT.keep[name] = true; },
     field: function (name, fn) { EXT.fields[name] = fn; }
@@ -1385,7 +1447,27 @@
     window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () { }); });
   }
   window.addEventListener('offline', function () { if (ref) setSync('offline'); });
-  window.addEventListener('online', function () { if (ref) { setSync('saving'); flush(); } });
+  // Startet appen uten nett, hentes kontoen og slås sammen med det som er gjort her før noe sendes,
+  // så ingenting fra andre enheter overskrives.
+  var merging = false;
+  function resync() {
+    if (!ref || merging) return;
+    if (!needMerge) {
+      var d = null; try { d = localStorage.getItem('tb_dirty'); } catch (e) { }
+      if (saveT || d) { setSync('saving'); flush(); }
+      return;
+    }
+    var r = ref; merging = true;
+    r.get().then(function (snap) {
+      merging = false;
+      if (r !== ref) return;
+      needMerge = false;
+      if (snap.exists) { state = mergeStates(normalize(JSON.parse(JSON.stringify(snap.data()))), state); render(); }
+      save(); flush();
+    }, function () { merging = false; setSync('offline'); });
+  }
+  window.addEventListener('online', resync);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && navigator.onLine !== false) resync(); });
 
   /* ---------- boot ---------- */
   var themeSel = document.querySelector('#theme');
