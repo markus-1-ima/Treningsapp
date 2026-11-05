@@ -21,6 +21,13 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 - Trykk på en økt i historikken for å se alle settene, vurderingen og notatet.
 - Rekordlisten viser estimert maks for vektøvelser.
 
+**Ny fane: Mer**
+- Kropp: logg vekt og midjemål, med grafer og endring siste 30 dager.
+- Verktøy: skivekalkulator (hvilke skiver på hver side), maks-kalkulator med prosenttabell, og stoppeklokke med runder.
+- Merker: 18 merker å samle, fra «Første økt» til «Hundre tonn», med fremdrift mot hvert merke.
+- Innstillinger: navnet ditt (hilsen på I dag-kortet), lyd og vibrasjon av/på, standard hviletid, hvor mye forslagene øker med, stangvekt og hvilke skiver du har.
+- Data og sikkerhetskopi: last ned alt som én fil, last ned historikken som regneark, gjenopprett fra fil og slett alle data.
+
 ---
 
 ## Onsdag 4. november 2026

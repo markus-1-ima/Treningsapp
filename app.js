@@ -112,6 +112,7 @@
   var view = 'uke', weekOffset = 0, armed = '', shownEx = {};
   var iv = null, ivTimer = null, celebrate = null;
   var editScope = 'all', managing = false;
+  var EXT = { views: {}, actions: {}, fields: {}, nav: {}, keep: {} };   // sider og handlinger fra andre filer (mer.js)
   var openLog = null, exSel = null, hold = null, holdT = null;   // åpen økt i historikken, valgt øvelse i grafen, tidtaker for holdøvelser           // ukeplan: endre alle uker eller bare den viste, plan-meny åpen   // intervalltimer som kjører, nye rekorder å vise
   var touched = false, ref = null;
   var P = function (id) { return state.programs.filter(function (p) { return p.id === id; })[0]; };
@@ -254,7 +255,7 @@
     // I dag
     if (weekOffset === 0) {
       var ti = todayIdx(), tItems = data[ti].items.filter(function (x) { return !!itemInfo(x); });
-      h += '<section class="panel today" aria-labelledby="today-h"><div class="today-h"><h3 id="today-h">I dag</h3><span class="sub">' + DAYS_LONG[ti] + ' ' + dateLabel(days[ti]) + '</span></div>';
+      h += '<section class="panel today" aria-labelledby="today-h"><div class="today-h"><h3 id="today-h">I dag</h3><span class="sub">' + DAYS_LONG[ti] + ' ' + dateLabel(days[ti]) + (state.settings.name ? ' · Lykke til, ' + esc(state.settings.name) + '!' : '') + '</span></div>';
       if (sess) h += '<p>Du har en økt i gang: <b>' + esc(sess.name) + '</b>. <button class="btn btn-sm" data-act="go-okt">Fortsett økta</button></p>';
       else if (iv) h += '<p>Intervalltimeren går. <button class="btn btn-sm" data-act="iv-open">Åpne timeren</button></p>';
       if (tItems.length) {
@@ -685,10 +686,10 @@
 
   /* ---------- render + routing ---------- */
   function render() {
-    var fn = { uke: viewUke, okt: viewOkt, programmer: viewProg, hjemme: viewHjemme, fremgang: viewFrem }[view];
+    var fn = { uke: viewUke, okt: viewOkt, programmer: viewProg, hjemme: viewHjemme, fremgang: viewFrem }[view] || EXT.views[view];
     $('#app').innerHTML = fn();
     document.querySelectorAll('.nav a').forEach(function (a) {
-      if (a.dataset.v === view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      if (a.dataset.v === (EXT.nav[view] || view)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     var showRest = view === 'okt' && !!sess;
     $('#restbar').hidden = !showRest;
@@ -823,7 +824,7 @@
     if (!hit) return out;
     var maxKg = Math.max.apply(null, h.sets.map(function (x) { return x[0]; }));
     var bestRep = Math.max.apply(null, h.sets.map(function (x) { return x[1]; }));
-    if (sess.kind === 'styrke' && maxKg > 0) { out.kg = maxKg + state.settings.inc; out.text = 'Du klarte alle repetisjonene sist. Prøv ' + fmtNum(out.kg) + ' kg i dag.'; }
+    if (sess.kind === 'styrke' && maxKg > 0) { out.kg = maxKg + state.settings.inc; out.text = 'Du klarte alle repetisjonene sist. Prøv ' + (Math.round(out.kg * 100) / 100).toLocaleString('nb-NO') + ' kg i dag.'; }
     else if (sess.kind === 'styrke') { out.reps = bestRep + 1; out.text = 'Du klarte alle repetisjonene sist. Prøv ' + out.reps + ' reps i dag.'; }
     else if (sess.kind === 'core') { out.reps = bestRep + 5; out.text = 'Du holdt hele tiden sist. Prøv ' + out.reps + ' sekunder i dag.'; }
     return out;
@@ -1034,7 +1035,7 @@
     var t = e.target.closest('[data-act]');
     if (!t) return;
     var a = t.dataset.act, p, ex;
-    var keep = (a === 'del-prog' || a === 'del-log' || a === 'cancel' || a === 'iv-stop' || a === 'plan-del');
+    var keep = (a === 'del-prog' || a === 'del-log' || a === 'cancel' || a === 'iv-stop' || a === 'plan-del' || !!EXT.keep[a]);
     if (!keep && armed) armed = '';
     switch (a) {
       case 'wk-prev': weekOffset--; render(); break;
@@ -1177,6 +1178,8 @@
         state.log = state.log.filter(function (x) { return x.id !== t.dataset.id; });
         save(); render(); break;
       }
+      default:
+        if (EXT.actions[a]) EXT.actions[a](t, e);
     }
   });
 
@@ -1217,6 +1220,8 @@
       case 'exsel': exSel = t.value; render(); break;
       case 'sk': sess.rows[+t.dataset.r].sets[+t.dataset.s].kg = num(t.value); saveDraft(); break;
       case 'sr': sess.rows[+t.dataset.r].sets[+t.dataset.s].reps = num(t.value); saveDraft(); break;
+      default:
+        if (EXT.fields[f]) EXT.fields[f](t, e);
     }
   }
   document.addEventListener('input', onField);
@@ -1336,6 +1341,25 @@
       byId('auth-retry').hidden = false;
     });
   }
+
+  /* ---------- utvidelser ---------- */
+  // Andre filer legger til sider med window.TBX.push(function (TB) { … }). De kjøres her, før første visning.
+  var TB = {
+    state: function () { return state; }, sess: function () { return sess; },
+    save: save, render: render, go: go, view: function () { return view; },
+    armed: function () { return armed; }, setArmed: function (v) { armed = v; },
+    esc: esc, iso: iso, parseIso: parseIso, addDays: addDays, startOfWeek: startOfWeek, isoWeek: isoWeek, dateLabel: dateLabel,
+    fmtNum: fmtNum, nf: nf, num: num, uid: uid, pad: pad, clock: clock, fmtTime: fmtTime, hm: hm,
+    beep: beep, buzz: buzz, ensureAudio: ensureAudio, DAYS: DAYS, DAYS_LONG: DAYS_LONG, MONTHS: MONTHS, RATE: RATE,
+    e1rm: e1rm, exKey: exKey, exHistory: exHistory, streakWeeks: streakWeeks, weekStats: weekStats, groupOf: groupOf, lineChart: lineChart, volText: volText,
+    defaults: defaults,
+    replaceState: function (obj) { state = normalize(obj); save(); },
+    page: function (name, fn, navTab) { EXT.views[name] = fn; if (VIEWS.indexOf(name) < 0) VIEWS.push(name); EXT.nav[name] = navTab || name; },
+    action: function (name, fn, keepArmed) { EXT.actions[name] = fn; if (keepArmed) EXT.keep[name] = true; },
+    field: function (name, fn) { EXT.fields[name] = fn; }
+  };
+  (window.TBX || []).forEach(function (f) { try { f(TB); } catch (e) { if (window.console) console.error(e); } });
+  window.TBX = { push: function (f) { f(TB); } };
 
   /* ---------- boot ---------- */
   var themeSel = document.querySelector('#theme');
