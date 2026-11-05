@@ -17,7 +17,7 @@
 
   var GY = 106;
   var L = { torso: 30, thigh: 26, shin: 26, up: 16, fore: 16 };
-  var TOE = 11, HEAD = 8.5, HEAD_R = 6;
+  var TOE = 11, HEAD = 8.5, HEAD_R = 6, PLATE_R = 9;
   var R = Math.PI / 180;
   var reduce = false;
   try { reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { }
@@ -26,6 +26,9 @@
   var LOWCHAIR = '<path class="prop" d="M20 82 L54 82 M24 82 L24 106 M50 82 L50 106 M20 82 L20 56"/>';
   var WALL = '<path class="prop wall" d="M60 -12 L60 106"/>';
   var STEP = '<path class="prop solid" d="M93 106 L93 94 L150 94 L150 106 Z"/>';
+  var BENCH = '<path class="prop" d="M44 85 L114 85 M52 85 L52 106 M106 85 L106 106"/>';
+  var SEAT = '<path class="prop" d="M78 77 L106 77 M92 77 L92 106 M84 106 L100 106"/>';
+  var BENCH_BOX = [44, 80, 114, 106], SEAT_BOX = [78, 74, 106, 106];
   var CHAIR_BOX = [26, 42, 66, 106], LOWCHAIR_BOX = [20, 56, 54, 106], WALL_BOX = [58, 30, 62, 106], STEP_BOX = [93, 94, 150, 106];
 
   var DEFS = [
@@ -128,6 +131,41 @@
       { h: [84, 80], t: -90, a: [88, 8], b: [80, 8], f: [44, 102], g: [116, 104], fa: 170, ga: 0 },
       { h: [92, 82], t: -92, a: [96, 12], b: [88, 12], f: [48, 102], g: [116, 104], fa: 170, ga: 0 }] },
 
+    // ---------- Treningssenter (stang og manualer) ----------
+    // bar: 'barbell' (stang med skiver), 'latbar' (stang uten skiver, med kabel) eller 'dumbbell' (manual i hver hånd).
+    // az = hvor bredt grepet er (hendenes avstand fra midten). faceUp = ligger på ryggen med hodet mot høyre.
+    { name: 'Benkpress', hi: ['arms'], bar: 'barbell', az: 13, faceUp: true, props: BENCH, box: BENCH_BOX, k: [1, 1], e: [-1, -1], p: [
+      { h: [70, 80], t: 0, d: -8, a: [100, 46], f: [48, 104] },
+      { h: [70, 80], t: 0, d: -8, a: [95, 64], f: [48, 104] }] },
+
+    { name: 'Knebøy med stang', hi: ['legs'], bar: 'barbell', barAt: 'back', az: 13, e: [-1, -1], p: [
+      { h: [100, 53], t: -88, a: [94, 21], f: [100, 104] },
+      { h: [78, 78.3], t: -58, a: [88, 48], f: [100, 104] }] },
+
+    { name: 'Markløft', hi: ['legs', 'core'], bar: 'barbell', az: 8, p: [
+      { h: [72, 76], t: -22, a: [104, 97], f: [100, 104] },
+      { h: [96, 53], t: -88, a: [99, 90], f: [100, 104] }] },
+
+    { name: 'Rumensk markløft', hi: ['legs'], bar: 'barbell', az: 8, p: [
+      { h: [96, 53], t: -88, a: [99, 90], f: [98, 104] },
+      { h: [80, 58], t: -20, a: [101, 88], f: [98, 104] }] },
+
+    { name: 'Skulderpress', hi: ['arms'], bar: 'barbell', az: 9.5, p: [
+      { h: [100, 53], t: -90, a: [107, 20], f: [100, 104] },
+      { h: [100, 53], t: -90, a: [102, -12], f: [100, 104] }] },
+
+    { name: 'Roing med stang', hi: ['arms', 'core'], bar: 'barbell', az: 8, p: [
+      { h: [80, 56], t: -20, a: [106, 90], f: [96, 104] },
+      { h: [80, 56], t: -20, a: [96, 60], f: [96, 104] }] },
+
+    { name: 'Nedtrekk', hi: ['arms', 'core'], bar: 'latbar', cable: true, az: 14, props: SEAT, box: SEAT_BOX, p: [
+      { h: [92, 74], t: -96, a: [96, 6], f: [116, 104] },
+      { h: [92, 74], t: -100, a: [106, 46], f: [116, 104] }] },
+
+    { name: 'Bicepscurl', hi: ['arms'], bar: 'dumbbell', p: [
+      { h: [100, 53], t: -90, a: [102, 60], f: [100, 104] },
+      { h: [100, 53], t: -90, a: [109, 28], f: [100, 104] }] },
+
     { name: 'Hamstring-strekk', hi: ['f'], hold: true, seg: 1.8, p: [
       { h: [60, 103], t: -90, a: [80, 96], f: [112, 103], g: [82, 103], fa: -90, ga: 0 },
       { h: [60, 103], t: -33, a: [112, 97], f: [112, 103], g: [82, 103], fa: -90, ga: 0 }] }
@@ -138,6 +176,8 @@
   var LOWCHAIR3 = [[-63, 22.5, 0, 34, 3, 30], [-76, 10.5, 12, 3, 21, 3], [-76, 10.5, -12, 3, 21, 3], [-50, 10.5, 12, 3, 21, 3], [-50, 10.5, -12, 3, 21, 3], [-80, 37, 0, 3, 26, 30]];
   var WALL3 = [[-42, 60, 0, 4, 120, 90]];
   var STEP3 = [[21.5, 6, 0, 57, 12, 40]];
+  var BENCH3 = [[-21, 19, 0, 70, 4, 13], [-48, 8.5, 0, 4, 17, 10], [6, 8.5, 0, 4, 17, 10]];
+  var SEAT3 = [[-8, 27.5, 0, 28, 3, 22], [-8, 13, 0, 4, 26, 4], [-8, 1, 0, 16, 2, 16]];
 
   var BY = {}, LC = {};
   var HI_WORDS = { legs: ['f', 'g'], arms: ['a', 'b'], core: ['torso'] };
@@ -147,7 +187,7 @@
     ex.e = ex.e || [1, 1];
     ex.props = ex.props || '';
     ex.tl = ex.tl || TOE;
-    ex.b3 = ex.props === CHAIR ? CHAIR3 : ex.props === LOWCHAIR ? LOWCHAIR3 : ex.props === WALL ? WALL3 : ex.props === STEP ? STEP3 : [];
+    ex.b3 = ex.props === CHAIR ? CHAIR3 : ex.props === LOWCHAIR ? LOWCHAIR3 : ex.props === WALL ? WALL3 : ex.props === STEP ? STEP3 : ex.props === BENCH ? BENCH3 : ex.props === SEAT ? SEAT3 : [];
     ex.hiSet = {};
     (ex.hi || []).forEach(function (w) { (HI_WORDS[w] || [w]).forEach(function (k) { ex.hiSet[k] = true; }); });
     ex.p.forEach(function (p) {
@@ -256,9 +296,14 @@
       f: leg(hf, p.f, ex.k[0], p.fa), g: leg(hg, p.g, ex.k[1], p.ga),
       face: [-Math.sin(th), Math.cos(th)]                       // brystets retning, vinkelrett på overkroppen
     };
+    if (ex.faceUp) sk.face = [-sk.face[0], -sk.face[1]];
+    if (ex.bar === 'barbell' || ex.bar === 'latbar') {
+      // Stanga ligger i hendene, eller på øvre del av ryggen ved knebøy med stang
+      sk.bar = ex.barAt === 'back' ? [neck[0] - sk.face[0] * 4.5 - Math.cos(th) * 2, neck[1] - sk.face[1] * 4.5 - Math.sin(th) * 2] : (sk.a ? sk.a[2] : null);
+    }
     if (ex.flip) {
       var m = function (q) { return q ? [200 - q[0], q[1]] : q; };
-      ['hip', 'neck', 'head', 'ctl', 'apex', 'sa', 'sb', 'hf', 'hg'].forEach(function (k) { sk[k] = m(sk[k]); });
+      ['hip', 'neck', 'head', 'ctl', 'apex', 'sa', 'sb', 'hf', 'hg', 'bar'].forEach(function (k) { if (sk[k]) sk[k] = m(sk[k]); });
       ['a', 'b', 'f', 'g'].forEach(function (k) { if (sk[k]) sk[k] = sk[k].map(m); });
       sk.face = [-sk.face[0], sk.face[1]];
     }
@@ -291,6 +336,13 @@
     var lift = Math.max(0, (GY - 2) - low);
     out.sx = r1(sk.hip[0]); out.srx = r1(Math.max(5, 15 - lift * 0.45)); out.so = r1(Math.max(0.08, 0.32 - lift * 0.012) * 100) / 100;
     pts.push([sk.head[0] - HEAD_R, sk.head[1] - HEAD_R], [sk.head[0] + HEAD_R, sk.head[1] + HEAD_R]);
+    out.bp = ''; out.cab = '';
+    var circ = function (c, r) { pts.push([c[0] - r, c[1] - r], [c[0] + r, c[1] + r]); return 'M' + r1(c[0] - r) + ' ' + r1(c[1]) + 'a' + r + ' ' + r + ' 0 1 0 ' + 2 * r + ' 0a' + r + ' ' + r + ' 0 1 0 ' + (-2 * r) + ' 0'; };
+    if (sk.bar) {
+      out.bp = circ(sk.bar, ex.bar === 'latbar' ? 2.5 : PLATE_R);
+      if (ex.cable) out.cab = 'M' + r1(sk.bar[0]) + ' ' + r1(sk.bar[1]) + 'L' + r1(sk.bar[0]) + ' -20';
+    }
+    if (ex.bar === 'dumbbell') { if (sk.a) out.bp += circ(sk.a[2], 4.6); if (sk.b) out.bp += circ(sk.b[2], 4.6); }
     out.pts = pts;
     return out;
   }
@@ -369,6 +421,21 @@
     for (j = 0; j < seg; j++) { var a = j * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     return mesh(gl, P, N, I);
   }
+  function meshCylCap(gl) {                                     // sylinder med lokk, til skiver og manualer
+    var P = [], N = [], I = [], seg = 24, j, a;
+    for (j = 0; j <= seg; j++) {
+      var ph = j * 2 * Math.PI / seg, c = Math.cos(ph), s = Math.sin(ph);
+      P.push(c, 0, s, c, 1, s); N.push(c, 0, s, c, 0, s);
+    }
+    for (j = 0; j < seg; j++) { a = j * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    [0, 1].forEach(function (y) {
+      var base = P.length / 3;
+      P.push(0, y, 0); N.push(0, y ? 1 : -1, 0);
+      for (j = 0; j <= seg; j++) { var ph = j * 2 * Math.PI / seg; P.push(Math.cos(ph), y, Math.sin(ph)); N.push(0, y ? 1 : -1, 0); }
+      for (j = 0; j < seg; j++) I.push(base, base + 1 + j, base + 2 + j);
+    });
+    return mesh(gl, P, N, I);
+  }
   function meshBox(gl) {
     var P = [], N = [], I = [];
     var F = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
@@ -413,7 +480,7 @@
       var u = {};
       ['uVP', 'uM', 'uTaper', 'uCyl', 'uShad', 'uLs', 'uL', 'uC', 'uCam', 'uBg', 'uShadC', 'uMode', 'uFloor'].forEach(function (n) { u[n] = gl.getUniformLocation(pr, n); });
       G = { cv: cv, gl: gl, u: u, aP: gl.getAttribLocation(pr, 'aP'), aN: gl.getAttribLocation(pr, 'aN'),
-        m: { sph: meshSphere(gl), cyl: meshCyl(gl), box: meshBox(gl), quad: meshQuad(gl) }, bound: null, col: null, colAt: 0 };
+        m: { sph: meshSphere(gl), cyl: meshCyl(gl), cylc: meshCylCap(gl), box: meshBox(gl), quad: meshQuad(gl) }, bound: null, col: null, colAt: 0 };
       gl.enableVertexAttribArray(G.aP); gl.enableVertexAttribArray(G.aN);
       return true;
     } catch (e) {
@@ -482,6 +549,8 @@
       hi: hexRgb(cs.getPropertyValue('--accent')),
       floor: mixC(bg, line, dark ? 0.7 : 0.9),
       prop: mixC(line, ink, dark ? 0.25 : 0.2),
+      steel: dark ? [0.72, 0.75, 0.79] : [0.62, 0.65, 0.69],
+      iron: dark ? [0.28, 0.31, 0.35] : [0.2, 0.22, 0.25],
       nose: mixC(ink, bg, dark ? 0.2 : 0.3),
       shadow: dark ? [0, 0, 0, 0.42] : [0.05, 0.1, 0.2, 0.2]
     };
@@ -518,6 +587,10 @@
       if (!J) return;
       var z = s3;
       var S = front ? V(J[0], 0) : V(J[0], z), E = V(J[1], z), H = V(J[2], z);
+      if (isArm && !front && ex.az) {                             // bredt grep: skuldrene står, hendene og albuene går ut
+        var sgn = z < 0 ? -1 : 1;
+        S = V(J[0], sgn * 6.2); E = V(J[1], sgn * (6.2 + (ex.az - 6.2) * 0.8)); H = V(J[2], sgn * ex.az);
+      }
       if (front && !isArm) {
         // Forfra bøyer knærne seg fremover mot kameraet, ikke ut til siden, og tærne peker fremover.
         var dv = sub(H, S), d = len(dv), u = norm(dv), mx = L.thigh + L.shin, dd = Math.min(d, mx - 0.01);
@@ -549,6 +622,27 @@
     limbSet('b', 'a', -zA, true); limbSet('g', 'f', -zL, false);
     limbSet('a', 'b', zA, true); limbSet('f', 'g', zL, false);
     ex.b3.forEach(function (b) { push('box', mBox(b), 'prop'); });
+    // Stang med skiver, eller en manual i hver hånd
+    if (sk.bar) {
+      var B = V(sk.bar, 0), half = ex.bar === 'latbar' ? 24 : 30;
+      push('cylc', mBone([B[0], B[1], -half], [B[0], B[1], half]), 'steel', [1.1, 1.1]);
+      if (ex.bar === 'barbell') {
+        [[17, 21.5], [-21.5, -17]].forEach(function (z2) {
+          push('cylc', mBone([B[0], B[1], z2[0]], [B[0], B[1], z2[1]]), 'iron', [PLATE_R, PLATE_R]);
+          push('cylc', mBone([B[0], B[1], z2[0] > 0 ? 15.5 : -17], [B[0], B[1], z2[0] > 0 ? 17 : -15.5]), 'steel', [2.4, 2.4]);
+        });
+      }
+      if (ex.cable) push('cyl', mBone(B, [B[0], GY + 30, 0]), 'steel', [0.45, 0.45]);
+    }
+    if (ex.bar === 'dumbbell') {
+      ['a', 'b'].forEach(function (k, i) {
+        var J2 = sk[k] || sk[i ? 'a' : 'b'];
+        if (!J2) return;
+        var z0 = (i ? -1 : 1) * (ex.az || 6.2), Hd = V(J2[2], z0);
+        push('cylc', mBone([Hd[0], Hd[1], z0 - 6.5], [Hd[0], Hd[1], z0 + 6.5]), 'steel', [1, 1]);
+        [[3.5, 6.5], [-6.5, -3.5]].forEach(function (z2) { push('cylc', mBone([Hd[0], Hd[1], z0 + z2[0]], [Hd[0], Hd[1], z0 + z2[1]]), 'iron', [4.4, 4.4]); });
+      });
+    }
     return out;
   }
 
@@ -597,7 +691,7 @@
       var k = p.k === 'ell' ? 'sph' : p.k;
       bind(k);
       gl.uniformMatrix4fv(u.uM, false, p.M);
-      gl.uniform1f(u.uCyl, k === 'cyl' ? 1 : 0);
+      gl.uniform1f(u.uCyl, k === 'cyl' || k === 'cylc' ? 1 : 0);
       if (p.t) gl.uniform2f(u.uTaper, p.t[0], p.t[1]); else gl.uniform2f(u.uTaper, 1, 1);
       gl.uniform1f(u.uShad, mode === 1 ? 1 : 0);
       gl.uniform1f(u.uMode, mode);
@@ -616,7 +710,7 @@
     gl.disable(gl.STENCIL_TEST); gl.disable(gl.BLEND); gl.depthMask(true);
     // Figur og rekvisitter
     parts.forEach(function (p) {
-      var col = p.g === 'prop' ? C.prop : p.g === 'nose' ? C.nose : (ex.hiSet[p.g] ? C.hi : C.body);
+      var col = p.g === 'prop' ? C.prop : p.g === 'nose' ? C.nose : p.g === 'steel' ? C.steel : p.g === 'iron' ? C.iron : (ex.hiSet[p.g] ? C.hi : C.body);
       draw(p, 0, col);
     });
     gl.disable(gl.SCISSOR_TEST);
@@ -649,6 +743,9 @@
     hd.setAttribute('cx', s.hx); hd.setAttribute('cy', s.hy);
     var sh = q('sh');
     if (sh) { sh.setAttribute('cx', s.sx); sh.setAttribute('rx', s.srx); sh.setAttribute('opacity', s.so); }
+    var bp = q('bp'), cab = q('cab');
+    if (bp) bp.setAttribute('d', s.bp);
+    if (cab) cab.setAttribute('d', s.cab);
   }
   function draw(el, tSec) {
     el.__done = true;
@@ -683,8 +780,9 @@
       '<svg viewBox="' + ex.vb.join(' ') + '" aria-hidden="true" focusable="false">' +
       '<line class="gnd" x1="' + (ex.vb[0] - 20) + '" y1="' + GY + '" x2="' + (ex.vb[0] + ex.vb[2] + 20) + '" y2="' + GY + '"/>' + ex.props +
       (ex.jump ? '<ellipse class="sh" cx="-50" cy="' + (GY + 1) + '" rx="10" ry="2.2"/>' : '') +
+      (ex.cable ? '<path class="cab" d=""/>' : '') +
       '<path class="lf" d=""/><path class="lfh" d=""/><path class="ln" d=""/><path class="lnh" d=""/>' +
-      '<circle class="hd" r="' + HEAD_R + '" cx="-50" cy="-50"/></svg></div>';
+      '<circle class="hd" r="' + HEAD_R + '" cx="-50" cy="-50"/>' + (ex.bar ? '<path class="bp" d=""/>' : '') + '</svg></div>';
   }
 
   if (reduce) {

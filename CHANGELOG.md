@@ -33,6 +33,12 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 - Appen virker uten nett. Det du gjør mens du er frakoblet lagres, og sendes til kontoen når du er på nett igjen.
 - «Installer»-knapp i Mer-fanen (på iPhone står det hvordan du legger den til fra Safari).
 
+**Animasjoner for treningssenteret**
+- Åtte nye animasjoner med stang og manualer: benkpress, knebøy med stang, markløft, rumensk markløft, skulderpress, roing med stang, nedtrekk og bicepscurl.
+- Stang med skiver, manualer, benk og nedtrekksapparat vises i 3D, og som enkle tegninger hvis 3D ikke virker.
+- Ny gruppe «Treningssenter» i øvelsesbiblioteket.
+- Øvelsene i programmene Overkropp og Underkropp har nå «Vis hvordan». Knebøy med vekt viser figuren med stang på ryggen.
+
 ---
 
 ## Onsdag 4. november 2026

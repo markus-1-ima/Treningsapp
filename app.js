@@ -341,14 +341,16 @@
     if (timed) nk += ' hold';
     var out = '<div class="sess-head"><div><h2 class="sess-title">' + esc(sess.name) + '</h2><p class="sub" id="sess-prog">' + sessProgress() + '</p></div><div class="timer tnum" id="elapsed" aria-label="Tid brukt">' + fmtTime((Date.now() - sess.start) / 1000) + '</div></div>';
     sess.rows.forEach(function (r, ri) {
-      var canShow = !!(window.TBAnim && TBAnim.has(r.name)), open = canShow && !!shownEx[r.name];
+      // Knebøy med vekt i programmet viser animasjonen med stang
+      var anName = (kg && r.sets[0] && num(r.sets[0].kg) > 0 && window.TBAnim && TBAnim.has(r.name + ' med stang')) ? r.name + ' med stang' : r.name;
+      var canShow = !!(window.TBAnim && TBAnim.has(anName)), open = canShow && !!shownEx[r.name];
       var rec = rowRecord(r);
       out += '<article class="panel ex"><div class="ex-top"><h3>' + esc(r.name) + '</h3><span class="plan">Plan: ' + esc(r.plan) + (rec ? ' · Rekord: ' + esc(prText(rec)) : '') + '</span></div>';
       var sg = suggestion(r);
       if (sg && sg.last) out += '<p class="lastline">Sist (' + dateLabel(parseIso(sg.last.d)) + '): ' + esc(setsText(sg.last.sets, sess.kind)) + '</p>';
       if (sg && sg.text && !r.bumped) out += '<div class="sugg"><span>' + esc(sg.text) + '</span><button class="btn btn-sm" data-act="bump" data-r="' + ri + '">Bruk forslaget</button></div>';
       if (canShow) out += '<div><button class="btn btn-sm btn-ghost" data-act="show-ex" data-r="' + ri + '" aria-expanded="' + open + '">' + (open ? 'Skjul animasjon' : 'Vis hvordan') + '</button></div>';
-      if (open) out += '<div class="ex-anim">' + TBAnim.html(r.name) + '</div>';
+      if (open) out += '<div class="ex-anim">' + TBAnim.html(anName) + '</div>';
       out += '<div class="fieldlab' + nk + '"><span>Sett</span>' + (kg ? '<span>Kg</span>' : '') + '<span>' + K.unit + '</span>' + (timed ? '<span></span>' : '') + '<span></span></div>';
       r.sets.forEach(function (s, si) {
         out += '<div class="setrow' + nk + '"><span class="n">' + (si + 1) + '</span>' +
@@ -625,7 +627,7 @@
     { name: 'Mobilitet hjemme', kind: 'mobilitet', min: 10, ex: [['Katt-ku', 2, 45, 0], ['Hoftebøyer-strekk', 2, 45, 0], ['Hamstring-strekk', 2, 45, 0]] }
   ];
   var LEVELS = { 1: 'Nybegynner', 2: 'Middels', 3: 'Krevende' };
-  var HOME_GROUPS = ['Overkropp', 'Ben', 'Core', 'Kondisjon', 'Mobilitet'];
+  var HOME_GROUPS = ['Overkropp', 'Ben', 'Core', 'Kondisjon', 'Mobilitet', 'Treningssenter'];
   var HOME_LIB = [
     ['Armhevinger', 'Overkropp', 1, 'Hendene litt bredere enn skuldrene, kroppen i rett linje. Senk brystet mot gulvet. Knærne i gulvet gjør den lettere.'],
     ['Diamant-armhevinger', 'Overkropp', 2, 'Hendene tett sammen under brystet og albuene inn mot kroppen. Tar hardere på baksiden av armene.'],
@@ -647,7 +649,16 @@
     ['Burpees', 'Kondisjon', 3, 'Ned i armhevingsposisjon, hopp føttene inn og hopp opp med armene over hodet.'],
     ['Katt-ku', 'Mobilitet', 1, 'På alle fire. Rund og svai ryggen i rolig tempo sammen med pusten.'],
     ['Hoftebøyer-strekk', 'Mobilitet', 1, 'I utfallsposisjon med bakre kne i gulvet. Skyv hoftene forsiktig fremover.'],
-    ['Hamstring-strekk', 'Mobilitet', 1, 'Sittende med ett bein strukket frem. Len deg frem fra hoftene med rett rygg.']
+    ['Hamstring-strekk', 'Mobilitet', 1, 'Sittende med ett bein strukket frem. Len deg frem fra hoftene med rett rygg.'],
+    // Treningssenter (med stang og manualer)
+    ['Benkpress', 'Treningssenter', 2, 'Ligg på benken med føttene i gulvet. Senk stanga kontrollert til brystet og press den rett opp igjen.'],
+    ['Knebøy med stang', 'Treningssenter', 2, 'Stanga hviler på øvre del av ryggen. Skyv hoftene bakover og ned til lårene er vannrette, og press opp gjennom hælene.'],
+    ['Markløft', 'Treningssenter', 3, 'Stanga over midten av foten. Hold ryggen rett, press gulvet bort med beina og reis deg med stanga tett inntil kroppen.'],
+    ['Rumensk markløft', 'Treningssenter', 2, 'Lett bøy i knærne. Skyv hoftene bakover og senk stanga langs lårene til du kjenner strekk bak på lårene.'],
+    ['Skulderpress', 'Treningssenter', 2, 'Stå med stanga foran skuldrene. Press den rett opp over hodet til armene er strake, og senk den rolig.'],
+    ['Roing med stang', 'Treningssenter', 2, 'Bøy deg fremover med rett rygg. Trekk stanga inn mot magen og klem skulderbladene sammen.'],
+    ['Nedtrekk', 'Treningssenter', 1, 'Sitt med knærne under puta. Trekk stanga ned til øvre del av brystet og slipp den rolig opp igjen.'],
+    ['Bicepscurl', 'Treningssenter', 1, 'En manual i hver hånd. Bøy armene og løft manualene mot skuldrene uten å svaie med kroppen.']
   ];
   var homeFilter = 'Alle';
   function homeProgram(i) {

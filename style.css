@@ -553,3 +553,7 @@ textarea.inp.note { min-height: 64px; padding: 10px; resize: vertical; line-heig
 .switch[aria-checked="true"] i { transform: translateX(20px); }
 .confirm { display: flex; flex-direction: column; gap: 10px; background: var(--accent-soft); border-radius: 10px; padding: 12px; margin: 4px 0 12px; }
 .setlist.danger { border-color: color-mix(in srgb, var(--danger) 40%, var(--line)); }
+
+/* Stang, skiver og kabel i strekfigurene */
+.anim .bp { fill: var(--muted); stroke: var(--ink); stroke-width: 2px; opacity: .8; }
+.anim .cab { stroke: var(--muted); stroke-width: 1.5px; fill: none; }
