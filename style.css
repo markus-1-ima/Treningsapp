@@ -500,6 +500,14 @@ textarea.inp.note { min-height: 64px; padding: 10px; resize: vertical; line-heig
 .about a { color: var(--accent); }
 .install { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-color: var(--accent); }
 .install > div { flex: 1 1 240px; }
+.ihelp { flex: 1 1 100%; font-size: 14px; color: var(--muted); }
+.ihelp summary { cursor: pointer; color: var(--accent); font-weight: 600; padding: 4px 0; }
+.ihelp p { margin: 6px 0 0; }
+.tipbar { display: flex; align-items: center; justify-content: space-between; gap: 10px 14px; flex-wrap: wrap; border-color: var(--accent); padding: 12px 14px; }
+.tipbar p { margin: 0; flex: 1 1 240px; font-size: 15px; }
+.tipbtns { display: flex; gap: 8px; }
+.tipbar[hidden] { display: none; }
+a.btn { text-decoration: none; }
 .bform, .tool { display: flex; flex-direction: column; gap: 12px; }
 .bform h3, .tool h3 { font-size: 17px; }
 .bform .row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }

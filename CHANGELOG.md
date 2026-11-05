@@ -32,6 +32,9 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 - Treningsbok kan legges på hjemskjermen og åpner da som en egen app med eget ikon.
 - Appen virker uten nett. Det du gjør mens du er frakoblet lagres, og sendes til kontoen når du er på nett igjen.
 - «Installer»-knapp i Mer-fanen (på iPhone står det hvordan du legger den til fra Safari).
+- Fra Samsung Internet kan Android feilaktig si at appen er utrygg når den installeres. Appen viser nå et tips med «Åpne i Chrome», så du installerer derfra i stedet.
+- «Står det at appen er utrygg?» i installer-kortet forklarer meldingen fra Google Play Protect og hva du kan gjøre.
+- Åpnet inne i Instagram, Snapchat eller lignende: appen sier hvordan du åpner den i Chrome eller Safari for å installere.
 
 **Animasjoner for treningssenteret**
 - Åtte nye animasjoner med stang og manualer: benkpress, knebøy med stang, markløft, rumensk markløft, skulderpress, roing med stang, nedtrekk og bicepscurl.

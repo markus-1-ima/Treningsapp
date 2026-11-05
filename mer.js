@@ -36,22 +36,76 @@
     return h;
   });
 
-  /* ---------- Installer appen (omgang 4) ---------- */
+  /* ---------- Installer appen ---------- */
+  // Samsung Internet lager hjemskjerm-appen som en gammeldags Android-pakke, og Google Play Protect
+  // stopper den da av og til som «usikker app». Chrome lager pakken riktig, så vi viser vei dit.
+  var UA = navigator.userAgent || '';
+  var android = /android/i.test(UA);
+  var ios = /iphone|ipad|ipod/i.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var samsung = /SamsungBrowser/i.test(UA);
+  var inApp = /FBAN|FBAV|FB_IAB|Instagram|Snapchat|musical_ly|TikTok|LinkedInApp|Line\/|; wv\)/i.test(UA);
+  var iosSafari = ios && !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(UA) && !inApp;
   var installEvt = null;
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); installEvt = e; if (TB.view() === 'mer') TB.render(); });
   window.addEventListener('appinstalled', function () { installEvt = null; if (TB.view() === 'mer') TB.render(); });
   function standalone() { try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) { return false; } }
+  function chromeUrl() {
+    var page = location.origin + location.pathname;
+    return 'intent://' + location.host + location.pathname + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(page) + ';end';
+  }
+  var chromeBtn = function (primary) { return '<a class="btn' + (primary ? ' btn-primary' : '') + '" href="' + esc(chromeUrl()) + '">Åpne i Chrome</a>'; };
+  function unsafeHelp() {
+    return '<details class="ihelp"><summary>Står det at appen er utrygg?</summary>' +
+      '<p>Noen Android-telefoner, særlig Samsung, kan vise «Usikker app blokkert» fra Google Play Protect når en nettapp legges på hjemskjermen. ' +
+      'Det er en kjent feilalarm: Treningsbok er bare denne nettsiden lagret på hjemskjermen, og den ber ikke om tilgang til noe på telefonen.</p>' +
+      ((samsung || inApp) ? '<p>Installer fra Chrome i stedet, eller bruk Treningsbok rett i nettleseren. Den virker likt.</p>'
+                          : '<p>Ser du meldingen, kan du trykke «Flere detaljer» og så «Installer likevel». Eller bruk Treningsbok rett i nettleseren, den virker likt.</p>') +
+      '</details>';
+  }
   function installCard() {
     if (standalone()) return '';
-    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    if (installEvt) return '<div class="panel install"><div><b>Installer appen</b><p class="sub">Legg Treningsbok på hjemskjermen. Den åpner som en egen app og virker uten nett.</p></div><button class="btn btn-primary" data-act="install">Installer</button></div>';
-    if (ios) return '<div class="panel install"><div><b>Legg til på hjemskjermen</b><p class="sub">Trykk på Del-knappen i Safari og velg «Legg til på Hjem-skjerm». Da åpner Treningsbok som en egen app.</p></div></div>';
+    if (android && (samsung || inApp)) {
+      return '<div class="panel install"><div><b>Installer fra Chrome</b><p class="sub">' +
+        (samsung ? 'Fra Samsung Internet kan telefonen feilaktig si at appen er utrygg. Åpne Treningsbok i Chrome og installer den derfra.'
+                 : 'Du har åpnet Treningsbok inne i en annen app. Åpne siden i Chrome for å installere den.') +
+        '</p></div>' + chromeBtn(true) + unsafeHelp() + '</div>';
+    }
+    if (installEvt) return '<div class="panel install"><div><b>Installer appen</b><p class="sub">Legg Treningsbok på hjemskjermen. Den åpner som en egen app og virker uten nett.</p></div><button class="btn btn-primary" data-act="install">Installer</button>' + (android ? unsafeHelp() : '') + '</div>';
+    if (ios && inApp) return '<div class="panel install"><div><b>Åpne i Safari først</b><p class="sub">Du har åpnet Treningsbok inne i en annen app. Trykk på menyen (··· eller kompasset) og velg «Åpne i Safari». Trykk så på Del-knappen og «Legg til på Hjem-skjerm».</p></div></div>';
+    if (ios) return '<div class="panel install"><div><b>Legg til på hjemskjermen</b><p class="sub">Trykk på Del-knappen' + (iosSafari ? ' i Safari' : '') + ' og velg «Legg til på Hjem-skjerm». Da åpner Treningsbok som en egen app.</p></div></div>';
+    if (android) return '<div class="panel install"><div><b>Installer appen</b><p class="sub">Åpne Treningsbok i Chrome og velg «Installer app» i menyen.</p></div>' + chromeBtn(false) + unsafeHelp() + '</div>';
     return '';
   }
   TB.action('install', function () {
     if (!installEvt) return;
     installEvt.prompt();
     installEvt.userChoice.then(function () { installEvt = null; TB.render(); }, function () { });
+  });
+
+  // Samsung Internet har sin egen installer-knapp i adressefeltet. Vis et lite tips øverst,
+  // så folk installerer fra Chrome i stedet og slipper meldingen om utrygg app.
+  var TIP_KEY = 'tb_tip_chrome';
+  function tipSeen() { try { return localStorage.getItem(TIP_KEY) === '1'; } catch (e) { return false; } }
+  if (android && (samsung || inApp) && !standalone() && !tipSeen()) {
+    var app = document.getElementById('app');
+    if (app) {
+      var tip = document.createElement('div');
+      tip.className = 'panel tipbar';
+      tip.setAttribute('role', 'note');
+      tip.innerHTML = '<p><b>Vil du installere appen?</b> Gjør det fra Chrome. ' +
+        (samsung ? 'Fra Samsung Internet kan telefonen feilaktig si at appen er utrygg.' : 'Fra denne appen går det ikke å installere.') + '</p>' +
+        '<div class="tipbtns">' + chromeBtn(true) + '<button class="btn btn-ghost" data-act="tip-x">Lukk</button></div>';
+      app.parentNode.insertBefore(tip, app);
+      // Mer-fanen har det samme rådet i installer-kortet, så tipset skjules der
+      var tipShow = function () { tip.hidden = TB.view() === 'mer'; };
+      window.addEventListener('hashchange', function () { setTimeout(tipShow, 0); });
+      setTimeout(tipShow, 0);
+    }
+  }
+  TB.action('tip-x', function () {
+    try { localStorage.setItem(TIP_KEY, '1'); } catch (e) { }
+    var t = document.querySelector('.tipbar');
+    if (t) t.remove();
   });
 
   /* ---------- Kropp ---------- */
