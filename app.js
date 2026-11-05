@@ -65,6 +65,14 @@
     s.last = s.last || {};
     s.rest = s.rest || 90;
     s.pr = (s.pr && typeof s.pr === 'object') ? s.pr : {};
+    var st0 = s.settings || {};
+    s.settings = {
+      sound: st0.sound !== false, vibrate: st0.vibrate !== false,
+      inc: st0.inc > 0 ? st0.inc : 2.5, bar: st0.bar > 0 ? st0.bar : 20,
+      plates: Array.isArray(st0.plates) && st0.plates.length ? st0.plates : [25, 20, 15, 10, 5, 2.5, 1.25],
+      name: typeof st0.name === 'string' ? st0.name : ''
+    };
+    s.body = Array.isArray(s.body) ? s.body : [];
     // Ukeplaner ligger i planList. Det gamle feltet plans står urørt, så eldre versjoner av appen ikke ødelegger noe.
     var toItems = function (w) { return okWeek(w).map(function (x) { return Array.isArray(x) ? x.filter(function (y) { return typeof y === 'string' && y; }) : (x ? [x] : []); }); };
     if (!Array.isArray(s.planList) || !s.planList.length) {
@@ -103,7 +111,8 @@
 
   var view = 'uke', weekOffset = 0, armed = '', shownEx = {};
   var iv = null, ivTimer = null, celebrate = null;
-  var editScope = 'all', managing = false;           // ukeplan: endre alle uker eller bare den viste, plan-meny åpen   // intervalltimer som kjører, nye rekorder å vise
+  var editScope = 'all', managing = false;
+  var openLog = null, exSel = null, hold = null, holdT = null;   // åpen økt i historikken, valgt øvelse i grafen, tidtaker for holdøvelser           // ukeplan: endre alle uker eller bare den viste, plan-meny åpen   // intervalltimer som kjører, nye rekorder å vise
   var touched = false, ref = null;
   var P = function (id) { return state.programs.filter(function (p) { return p.id === id; })[0]; };
   var todayIdx = function () { return (new Date().getDay() + 6) % 7; };
@@ -309,6 +318,8 @@
     return h ? h + ':' + pad(m) + ':' + pad(s) : pad(m) + ':' + pad(s);
   }
   var CHECK = '<'+'svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/><'+'/svg>';
+  var PLAY = '<'+'svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/><'+'/svg>';
+  var RATE = ['Veldig lett', 'Lett', 'Passe', 'Tung', 'Helt maks'];
 
   function viewOkt() {
     if (!sess && iv) return viewInterval();
@@ -325,23 +336,33 @@
       return h + '</div>';
     }
     var K = KINDS[sess.kind] || KINDS.styrke, kg = sess.kind === 'styrke', nk = kg ? '' : ' nokg';
-    var out = '<div class="sess-head"><div><h2 style="font-family:var(--font-display);font-size:34px;text-transform:uppercase;line-height:1.05">' + esc(sess.name) + '</h2><p class="sub" id="sess-prog">' + sessProgress() + '</p></div><div class="timer tnum" id="elapsed" aria-label="Tid brukt">' + fmtTime((Date.now() - sess.start) / 1000) + '</div></div>';
+    var timed = K.unit === 'Sek';                                   // holdøvelser får egen tidtaker per sett
+    if (timed) nk += ' hold';
+    var out = '<div class="sess-head"><div><h2 class="sess-title">' + esc(sess.name) + '</h2><p class="sub" id="sess-prog">' + sessProgress() + '</p></div><div class="timer tnum" id="elapsed" aria-label="Tid brukt">' + fmtTime((Date.now() - sess.start) / 1000) + '</div></div>';
     sess.rows.forEach(function (r, ri) {
       var canShow = !!(window.TBAnim && TBAnim.has(r.name)), open = canShow && !!shownEx[r.name];
       var rec = rowRecord(r);
       out += '<article class="panel ex"><div class="ex-top"><h3>' + esc(r.name) + '</h3><span class="plan">Plan: ' + esc(r.plan) + (rec ? ' · Rekord: ' + esc(prText(rec)) : '') + '</span></div>';
+      var sg = suggestion(r);
+      if (sg && sg.last) out += '<p class="lastline">Sist (' + dateLabel(parseIso(sg.last.d)) + '): ' + esc(setsText(sg.last.sets, sess.kind)) + '</p>';
+      if (sg && sg.text && !r.bumped) out += '<div class="sugg"><span>' + esc(sg.text) + '</span><button class="btn btn-sm" data-act="bump" data-r="' + ri + '">Bruk forslaget</button></div>';
       if (canShow) out += '<div><button class="btn btn-sm btn-ghost" data-act="show-ex" data-r="' + ri + '" aria-expanded="' + open + '">' + (open ? 'Skjul animasjon' : 'Vis hvordan') + '</button></div>';
       if (open) out += '<div class="ex-anim">' + TBAnim.html(r.name) + '</div>';
-      out += '<div class="fieldlab' + nk + '"><span>Sett</span>' + (kg ? '<span>Kg</span>' : '') + '<span>' + K.unit + '</span><span></span></div>';
+      out += '<div class="fieldlab' + nk + '"><span>Sett</span>' + (kg ? '<span>Kg</span>' : '') + '<span>' + K.unit + '</span>' + (timed ? '<span></span>' : '') + '<span></span></div>';
       r.sets.forEach(function (s, si) {
         out += '<div class="setrow' + nk + '"><span class="n">' + (si + 1) + '</span>' +
           (kg ? '<input class="inp" type="number" inputmode="decimal" step="0.5" min="0" data-f="sk" data-r="' + ri + '" data-s="' + si + '" value="' + esc(s.kg) + '" aria-label="Kilo, sett ' + (si + 1) + '">' : '') +
           '<input class="inp" type="number" inputmode="decimal" min="0" data-f="sr" data-r="' + ri + '" data-s="' + si + '" value="' + esc(s.reps) + '" aria-label="' + K.unit + ', sett ' + (si + 1) + '">' +
+          (timed ? '<button class="holdbtn' + (hold && hold.r === ri && hold.s === si ? ' running' : '') + '" id="hold-' + ri + '-' + si + '" data-act="hold" data-r="' + ri + '" data-s="' + si + '" aria-label="' + (hold && hold.r === ri && hold.s === si ? 'Stopp tidtakeren' : 'Start tidtaker for sett ' + (si + 1)) + '">' +
+            (hold && hold.r === ri && hold.s === si ? Math.max(0, Math.ceil((hold.end - Date.now()) / 1000)) : PLAY) + '</button>' : '') +
           '<button class="check' + (s.done ? ' done' : '') + '" data-act="setdone" data-r="' + ri + '" data-s="' + si + '" aria-pressed="' + (s.done ? 'true' : 'false') + '" aria-label="Sett ' + (si + 1) + ' fullført">' + CHECK + '</button></div>';
         if (s.done && beatsRecord(r.name, s)) out += '<div class="pr-new"><span class="prtag">Ny rekord</span> ' + esc(prText(setRec(sess.kind, s))) + '</div>';
       });
       out += '<div><button class="btn btn-sm btn-ghost" data-act="addset" data-r="' + ri + '">+ Legg til sett</button></div></article>';
     });
+    out += '<section class="panel rateset" aria-labelledby="rate-h"><h3 id="rate-h">Hvordan gikk økta?</h3><div class="chips" role="group" aria-label="Hvor tung var økta">' +
+      RATE.map(function (t, i) { return '<button class="chip" data-act="rate" data-k="' + (i + 1) + '" aria-pressed="' + (sess.rate === i + 1) + '">' + t + '</button>'; }).join('') + '</div>' +
+      '<label class="sr" for="sess-note">Notat</label><textarea id="sess-note" class="inp note" data-f="snote" rows="2" maxlength="500" placeholder="Notat (valgfritt), for eksempel hvordan kroppen kjentes">' + esc(sess.note || '') + '</textarea></section>';
     out += '<div class="sess-foot"><button class="btn btn-primary" data-act="finish">Fullfør økt</button><button class="btn btn-ghost' + (armed === 'cancel' ? ' btn-danger' : '') + '" data-act="cancel">' + (armed === 'cancel' ? 'Forkast økta?' : 'Avbryt økt') + '</button><span class="msg" id="sess-msg" role="alert"></span></div>';
     return out;
   }
@@ -404,34 +425,177 @@
     return st;
   }
 
+  function weekStats(mon) {
+    var a = iso(mon), b = iso(addDays(mon, 6)), o = { n: 0, min: 0, vol: 0, prs: 0 };
+    state.log.forEach(function (l) { if (l.d >= a && l.d <= b) { o.n++; o.min += l.min || 0; o.vol += l.vol || 0; o.prs += l.prs || 0; } });
+    return o;
+  }
+  function hm(min) { var h = Math.floor(min / 60), m = Math.round(min % 60); return h ? h + ' t ' + m + ' min' : m + ' min'; }
+  function diffTag(now, before, fmt) {
+    if (!before && !now) return '';
+    var d = now - before;
+    if (!d) return '<span class="dt">som forrige uke</span>';
+    return '<span class="dt ' + (d > 0 ? 'up' : 'down') + '">' + (d > 0 ? '+' : '−') + fmt(Math.abs(d)) + ' fra forrige uke</span>';
+  }
+  function volText(v) { return v >= 1000 ? (v / 1000).toLocaleString('nb-NO', { maximumFractionDigits: 1 }) + ' tonn' : nf(v) + ' kg'; }
+
+  // Treningskalender: én rute per dag de siste 20 ukene, mørkere jo lenger du trente.
+  function heatmap() {
+    var weeks = 20, today = new Date(), tIso = iso(today), mon0 = addDays(startOfWeek(today), -7 * (weeks - 1));
+    var mins = {}, count = 0;
+    state.log.forEach(function (l) { mins[l.d] = (mins[l.d] || 0) + (l.min || 1); });
+    var cells = '', months = '', lastM = -1, lastCol = -9;
+    for (var w = 0; w < weeks; w++) {
+      var wm = addDays(mon0, 7 * w);
+      var mlabel = '';
+      for (var k = 0; k < 7; k++) {
+        var dd = addDays(wm, k);
+        if ((dd.getDate() === 1 || (w === 0 && k === 0)) && dd.getMonth() !== lastM && w - lastCol >= 3) { mlabel = MONTHS[dd.getMonth()]; lastM = dd.getMonth(); lastCol = w; }
+      }
+      months += '<span>' + mlabel + '</span>';
+      for (var d = 0; d < 7; d++) {
+        var day = addDays(wm, d), di = iso(day), m = mins[di] || 0;
+        if (di > tIso) { cells += '<i class="fut"></i>'; continue; }
+        if (m) count++;
+        var lv = !m ? 0 : m < 30 ? 1 : m < 60 ? 2 : 3;
+        cells += '<i class="lv' + lv + (di === tIso ? ' now' : '') + '" title="' + DAYS[d] + ' ' + dateLabel(day) + (m ? ': ' + m + ' min' : ': ingen trening') + '"></i>';
+      }
+    }
+    return '<div class="panel"><div class="ph"><h3>Treningsdager</h3><span class="sub">' + count + ' dager med trening de siste 20 ukene</span></div>' +
+      '<div class="heatwrap"><div class="heatdays" aria-hidden="true"><span>Man</span><span></span><span>Ons</span><span></span><span>Fre</span><span></span><span>Søn</span></div>' +
+      '<div class="heatmain"><div class="heatmonths" aria-hidden="true">' + months + '</div><div class="heat" role="img" aria-label="Treningskalender for de siste 20 ukene">' + cells + '</div></div></div>' +
+      '<div class="heatlegend" aria-hidden="true"><span class="sub">Mindre</span><i class="lv0"></i><i class="lv1"></i><i class="lv2"></i><i class="lv3"></i><span class="sub">Mer</span></div></div>';
+  }
+
+  // Graf for én øvelse: beste sett hver gang (estimert maks for vektøvelser).
+  function exercisePanel() {
+    var names = {}, order = [];
+    state.log.forEach(function (l) { (l.ex || []).forEach(function (e) { var k = exKey(e.n); if (!names[k]) { names[k] = e.n; order.push(k); } }); });
+    var h = '<div class="panel"><div class="ph"><h3>Utvikling per øvelse</h3></div>';
+    if (!order.length) return h + '<p class="empty">Fullfør en økt, så kan du følge utviklingen for hver øvelse her.</p></div>';
+    if (!exSel || !names[exSel]) exSel = order[0];
+    h += '<label class="sr" for="ex-sel">Velg øvelse</label><select id="ex-sel" class="inp exsel" data-f="exsel">' + order.slice().sort(function (a, b) { return names[a].localeCompare(names[b], 'nb'); }).map(function (k) {
+      return '<option value="' + esc(k) + '"' + (k === exSel ? ' selected' : '') + '>' + esc(names[k]) + '</option>';
+    }).join('') + '</select>';
+    var hist = exHistory(names[exSel]).slice(0, 30).reverse();
+    var weighted = hist.some(function (x) { return x.sets.some(function (y) { return y[0] > 0; }); });
+    var pts = hist.map(function (x) {
+      var v = 0;
+      x.sets.forEach(function (y) { var c = weighted ? e1rm(y[0], y[1]) : y[1]; if (c > v) v = c; });
+      return { d: x.d, v: Math.round(v * 10) / 10 };
+    });
+    var unit = weighted ? 'kg' : unitOf(hist.length ? hist[hist.length - 1].kind : 'styrke');
+    h += '<p class="sub">' + (weighted ? 'Estimert maks (1RM) ut fra beste sett hver økt.' : 'Beste sett hver økt.') + '</p>';
+    h += lineChart(pts, unit);
+    var recent = exHistory(names[exSel]).slice(0, 5);
+    h += '<div class="hist">' + recent.map(function (x) {
+      var d = parseIso(x.d);
+      return '<div class="hrow"><span class="d">' + DAYS[(d.getDay() + 6) % 7] + ' ' + dateLabel(d) + '</span><div><div class="meta">' + esc(setsText(x.sets, x.kind)) + '</div></div><span></span></div>';
+    }).join('') + '</div>';
+    return h + '</div>';
+  }
+  function lineChart(pts, unit) {
+    if (pts.length < 2) return '<p class="empty">Gjør øvelsen minst to ganger, så tegnes en graf.</p>';
+    var W = 640, H = 220, L = 46, R = 16, T = 16, B = 30;
+    var vs = pts.map(function (p) { return p.v; }), lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs);
+    if (hi === lo) { hi += 1; lo = Math.max(0, lo - 1); }
+    var padv = (hi - lo) * 0.15; lo = Math.max(0, lo - padv); hi += padv;
+    var x = function (i) { return L + (W - L - R) * (pts.length === 1 ? 0.5 : i / (pts.length - 1)); };
+    var y = function (v) { return T + (H - T - B) * (1 - (v - lo) / (hi - lo)); };
+    var s = '<' + 'svg class="chart line" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Utvikling, fra ' + fmtNum(pts[0].v) + ' til ' + fmtNum(pts[pts.length - 1].v) + ' ' + unit + '">';
+    [lo, (lo + hi) / 2, hi].forEach(function (v) { s += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '"/><text x="' + (L - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + fmtNum(Math.round(v)) + '</text>'; });
+    var path = pts.map(function (p, i) { return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p.v).toFixed(1); }).join('');
+    s += '<path class="area" d="' + path + 'L' + x(pts.length - 1).toFixed(1) + ' ' + (H - B) + 'L' + x(0).toFixed(1) + ' ' + (H - B) + 'Z"/>';
+    s += '<path class="ln" d="' + path + '"/>';
+    pts.forEach(function (p, i) { s += '<circle class="pt' + (i === pts.length - 1 ? ' last' : '') + '" cx="' + x(i).toFixed(1) + '" cy="' + y(p.v).toFixed(1) + '" r="' + (i === pts.length - 1 ? 5 : 3.5) + '"><title>' + dateLabel(parseIso(p.d)) + ': ' + fmtNum(p.v) + ' ' + unit + '</title></circle>'; });
+    var lp = pts[pts.length - 1];
+    s += '<text class="val" x="' + Math.min(x(pts.length - 1), W - R - 4) + '" y="' + (y(lp.v) - 10) + '" text-anchor="end">' + fmtNum(lp.v) + ' ' + unit + '</text>';
+    s += '<text x="' + L + '" y="' + (H - 8) + '">' + dateLabel(parseIso(pts[0].d)) + '</text><text x="' + (W - R) + '" y="' + (H - 8) + '" text-anchor="end">' + dateLabel(parseIso(lp.d)) + '</text>';
+    return '<div class="chart-wrap">' + s + '<' + '/svg></div>';
+  }
+
+  // Hvilke muskelgrupper som har fått sett de siste 30 dagene.
+  var GROUP_RULES = [
+    ['Mobilitet', /strekk|katt|mobil|rotasjon|yoga/],
+    ['Kondisjon', /jumping|høye knær|burpee|løp|sykkel|intervall|hopp|oppvarming|nedkjøling|nedjogg|tau/],
+    ['Skuldre', /skulder|pike|militær|sidehev|face ?pull/],
+    ['Armer', /diamant|curl|biceps|triceps|dips/],
+    ['Ben', /knebøy|utfall|bulgarsk|beinpress|benpress|tåhev|vegg-sitt|bekkenløft|hip ?thrust|rumensk|step|legg/],
+    ['Bryst', /benk|armhev|brystpress|flyes|push/],
+    ['Rygg', /roing|nedtrekk|pull|chin|markløft|superman|rygg/],
+    ['Core', /planke|dødbille|bird|mage|sit-?up|crunch|hollow|russian/]
+  ];
+  function groupOf(name, kind) {
+    var n = exKey(name);
+    for (var i = 0; i < GROUP_RULES.length; i++) if (GROUP_RULES[i][1].test(n)) return GROUP_RULES[i][0];
+    return kind === 'kondisjon' ? 'Kondisjon' : kind === 'mobilitet' ? 'Mobilitet' : kind === 'core' ? 'Core' : 'Annet';
+  }
+  function groupsPanel() {
+    var since = iso(addDays(new Date(), -29)), cnt = {}, total = 0;
+    state.log.forEach(function (l) {
+      if (l.d < since) return;
+      (l.ex || []).forEach(function (e) { var g = groupOf(e.n, l.kind); cnt[g] = (cnt[g] || 0) + e.s.length; total += e.s.length; });
+    });
+    var h = '<div class="panel"><div class="ph"><h3>Muskelgrupper</h3><span class="sub">Antall sett de siste 30 dagene</span></div>';
+    if (!total) return h + '<p class="empty">Fullfør noen økter, så ser du hvilke muskelgrupper du trener mest.</p></div>';
+    var list = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; }), max = cnt[list[0]];
+    h += '<div class="gbars">' + list.map(function (g) {
+      return '<div class="gbar"><span class="gname">' + g + '</span><span class="gtrack"><i style="width:' + Math.max(4, cnt[g] / max * 100).toFixed(1) + '%"></i></span><span class="gval tnum">' + cnt[g] + '</span></div>';
+    }).join('') + '</div>';
+    var missing = ['Bryst', 'Rygg', 'Ben', 'Skuldre', 'Core'].filter(function (g) { return !cnt[g]; });
+    if (missing.length && missing.length < 5) h += '<p class="sub" style="margin-top:10px">Ikke trent siste 30 dager: ' + missing.join(', ').toLowerCase() + '.</p>';
+    return h + '</div>';
+  }
+
+  function histDetail(l) {
+    var h = '<div class="hdetail">';
+    if (l.ex && l.ex.length) h += l.ex.map(function (e) { return '<div class="hx"><span>' + esc(e.n) + '</span><span class="tnum">' + esc(setsText(e.s, l.kind)) + '</span></div>'; }).join('');
+    else h += '<p class="sub">Ingen detaljer om settene for denne økta.</p>';
+    if (l.rate) h += '<p class="sub">Følelse: <b>' + RATE[l.rate - 1] + '</b></p>';
+    if (l.note) h += '<p class="hnote">' + esc(l.note) + '</p>';
+    return h + '</div>';
+  }
+
   function viewFrem() {
     var since = iso(addDays(new Date(), -29));
     var recent = state.log.filter(function (l) { return l.d >= since; });
     var vol = recent.reduce(function (a, l) { return a + (l.vol || 0); }, 0);
     var volTxt = vol >= 1000 ? '<span class="big tnum">' + (vol / 1000).toLocaleString('nb-NO', { maximumFractionDigits: 1 }) + '<small>tonn</small></span>' : '<span class="big tnum">' + nf(vol) + '<small>kg</small></span>';
-    var h = '<div class="sec-head"><div><h2>Fremgang</h2><p class="sub">Siste 30 dager og siste åtte uker.</p></div></div>';
+    var h = '<div class="sec-head"><div><h2>Fremgang</h2><p class="sub">Uka, de siste 30 dagene og utviklingen over tid.</p></div></div>';
     if (celebrate) {
       h += '<div class="celebrate" role="status"><div><h3>' + (celebrate.length === 1 ? 'Ny personlig rekord!' : celebrate.length + ' nye personlige rekorder!') + '</h3><ul>' +
         celebrate.map(function (c) { return '<li><b>' + esc(c.name) + ':</b> ' + esc(c.text) + ' <span class="sub">(før ' + esc(c.old) + ')</span></li>'; }).join('') +
         '</ul></div><button class="btn btn-sm" data-act="celebrate-x">Lukk</button></div>';
     }
+    // Denne uka mot forrige uke
+    var wNow = weekStats(startOfWeek(new Date())), wPrev = weekStats(addDays(startOfWeek(new Date()), -7));
+    h += '<div class="panel"><div class="ph"><h3>Denne uka</h3><span class="sub">Uke ' + isoWeek(new Date()) + '</span></div><div class="stats4">' +
+      '<div><b class="tnum">' + wNow.n + '</b><span>' + (wNow.n === 1 ? 'økt' : 'økter') + '</span>' + diffTag(wNow.n, wPrev.n, function (v) { return v; }) + '</div>' +
+      '<div><b class="tnum">' + hm(wNow.min) + '</b><span>trening</span>' + diffTag(wNow.min, wPrev.min, hm) + '</div>' +
+      '<div><b class="tnum">' + volText(wNow.vol) + '</b><span>løftet</span>' + diffTag(wNow.vol, wPrev.vol, volText) + '</div>' +
+      '<div><b class="tnum">' + wNow.prs + '</b><span>' + (wNow.prs === 1 ? 'ny rekord' : 'nye rekorder') + '</span></div></div></div>';
     h += '<div class="tiles"><div class="panel tile"><span class="big tnum">' + recent.length + '</span><div class="lab">Økter siste 30 dager</div></div>' +
       '<div class="panel tile">' + volTxt + '<div class="lab">Løftet volum (styrkeøkter)</div></div>' +
       '<div class="panel tile"><span class="big tnum">' + streakWeeks() + '<small>uker</small></span><div class="lab">På rad med ukemålet nådd</div></div></div>';
-    h += '<div class="panel"><h3 style="font-size:17px;margin-bottom:8px">Økter per uke</h3><div class="chart-wrap">' + chartSvg() + '</div></div>';
-    h += '<div class="panel"><h3 style="font-size:17px;margin-bottom:4px">Historikk</h3>';
+    h += heatmap();
+    h += '<div class="panel"><div class="ph"><h3>Økter per uke</h3></div><div class="chart-wrap">' + chartSvg() + '</div></div>';
+    h += exercisePanel();
+    h += groupsPanel();
+    h += '<div class="panel"><div class="ph"><h3>Historikk</h3><span class="sub">Trykk på en økt for å se settene</span></div>';
     if (!state.log.length) h += '<p class="empty">Ingen økter logget ennå. Fullfør en økt, så dukker den opp her.</p>';
     else {
       h += '<div class="hist">';
-      state.log.slice(0, 20).forEach(function (l) {
-        var d = parseIso(l.d), key = 'l' + l.id;
+      state.log.slice(0, 30).forEach(function (l) {
+        var d = parseIso(l.d), key = 'l' + l.id, open = openLog === l.id;
         var meta = l.min + ' min · ' + l.n + ' ' + (l.unit || 'sett') + (l.vol > 0 ? ' · ' + nf(l.vol) + ' kg' : '') +
-          (l.prs ? ' · ' + l.prs + (l.prs === 1 ? ' rekord' : ' rekorder') : '');
-        h += '<div class="hrow"><span class="d">' + DAYS[(d.getDay() + 6) % 7] + ' ' + dateLabel(d) + '</span><div><div class="pn">' + esc(l.name) + '</div><div class="meta">' + meta + '</div></div>' +
+          (l.prs ? ' · ' + l.prs + (l.prs === 1 ? ' rekord' : ' rekorder') : '') + (l.rate ? ' · ' + RATE[l.rate - 1].toLowerCase() : '');
+        h += '<div class="hrow' + (open ? ' open' : '') + '"><span class="d">' + DAYS[(d.getDay() + 6) % 7] + ' ' + dateLabel(d) + '</span>' +
+          '<button class="hopen" data-act="hist-open" data-id="' + esc(l.id) + '" aria-expanded="' + open + '"><span class="pn">' + esc(l.name) + '</span><span class="meta">' + meta + '</span></button>' +
           '<button class="btn btn-sm btn-ghost btn-danger" data-act="del-log" data-id="' + esc(l.id) + '" aria-label="Slett økt">' + (armed === key ? 'Slett?' : 'Slett') + '</button></div>';
+        if (open) h += histDetail(l);
       });
       h += '</div>';
-      if (state.log.length > 20) h += '<p class="sub" style="margin-top:8px">Viser de 20 siste av ' + state.log.length + ' økter.</p>';
+      if (state.log.length > 30) h += '<p class="sub" style="margin-top:8px">Viser de 30 siste av ' + state.log.length + ' økter.</p>';
     }
     h += '</div>';
     return h + prPanel();
@@ -444,7 +608,7 @@
     if (!list.length) return h + '<p class="empty">Fullfør en styrke- eller core-økt, så lagres rekordene dine her.</p></div>';
     h += '<div class="hist">';
     list.slice(0, 15).forEach(function (r) {
-      h += '<div class="hrow"><span class="d">' + dateLabel(parseIso(r.d)) + '</span><div><div class="pn">' + esc(r.name) + '</div><div class="meta">' + esc(PR_LABEL[r.type]) + '</div></div><span class="prval tnum">' + esc(prText(r)) + '</span></div>';
+      h += '<div class="hrow"><span class="d">' + dateLabel(parseIso(r.d)) + '</span><div><div class="pn">' + esc(r.name) + '</div><div class="meta">' + esc(PR_LABEL[r.type]) + (r.type === 'kg' && r.reps > 1 ? ' · estimert maks ' + fmtNum(Math.round(e1rm(r.kg, r.reps) * 2) / 2) + ' kg' : '') + '</div></div><span class="prval tnum">' + esc(prText(r)) + '</span></div>';
     });
     if (list.length > 15) h += '<p class="sub" style="margin-top:8px">Viser de 15 nyeste av ' + list.length + ' rekorder.</p>';
     return h + '</div></div>';
@@ -530,6 +694,8 @@
     $('#restbar').hidden = !showRest;
     document.body.classList.toggle('has-rest', showRest);
     drawRest();
+    // Diagrammer som er bredere enn skjermen viser den nyeste uka først
+    document.querySelectorAll('.chart-wrap').forEach(function (el) { el.scrollLeft = el.scrollWidth; });
     if (window.TBAnim) TBAnim.refresh();
   }
   function route() {
@@ -546,7 +712,7 @@
   var restEnd = 0, restTimer = null, audio = null;
   function beep(freq, dur) {
     try {
-      if (!audio) return;
+      if (!audio || !state.settings.sound) return;
       var o = audio.createOscillator(), g = audio.createGain();
       o.type = 'sine'; o.frequency.value = freq || 880; g.gain.value = 0.15;
       o.connect(g); g.connect(audio.destination);
@@ -556,7 +722,7 @@
   function ensureAudio() {
     try { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch (e) { }
   }
-  function buzz(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { } }
+  function buzz(pattern) { try { if (navigator.vibrate && state.settings.vibrate) navigator.vibrate(pattern); } catch (e) { } }
   function drawRest() {
     var el = $('#rest-time'), bar = $('#restbar');
     if (!el) return;
@@ -598,7 +764,7 @@
         var last = state.last[e.name] || {};
         var n = Math.max(1, Math.round(num(e.sets)) || 1), sets = [];
         for (var i = 0; i < n; i++) sets.push({ kg: kg ? (last.kg != null ? last.kg : e.kg) : 0, reps: last.reps != null ? last.reps : e.reps, done: false });
-        return { name: e.name, plan: n + ' × ' + e.reps + (kg ? (num(e.kg) > 0 ? ' × ' + e.kg + ' kg' : '') : ' ' + K.unit.toLowerCase()), sets: sets };
+        return { name: e.name, plan: n + ' × ' + e.reps + (kg ? (num(e.kg) > 0 ? ' × ' + e.kg + ' kg' : '') : ' ' + K.unit.toLowerCase()), sets: sets, target: num(e.reps), nsets: n };
       })
     };
     saveDraft(); stopRest();
@@ -620,10 +786,61 @@
     mins = Math.max(1, Math.round((Date.now() - sess.start) / 60000));
     var newPRs = updateRecords(sess);
     celebrate = newPRs.length ? newPRs : null;
-    state.log.unshift({ id: uid(), d: iso(new Date()), pid: sess.pid, name: sess.name, kind: sess.kind, min: mins, vol: Math.round(vol), n: done, prs: newPRs.length });
-    state.log = state.log.slice(0, 400);
-    sess = null; saveDraft(); stopRest(); save();
+    var exd = sess.rows.map(function (r) {
+      return { n: String(r.name).trim(), s: r.sets.filter(function (x) { return x.done; }).map(function (x) { return [num(x.kg), num(x.reps)]; }) };
+    }).filter(function (x) { return x.s.length; });
+    state.log.unshift({ id: uid(), d: iso(new Date()), pid: sess.pid, name: sess.name, kind: sess.kind, min: mins, vol: Math.round(vol), n: done, prs: newPRs.length,
+      ex: exd, rate: sess.rate || 0, note: String(sess.note || '').trim().slice(0, 500) });
+    state.log = state.log.slice(0, 600);
+    stopHold(); sess = null; saveDraft(); stopRest(); save();
     go('fremgang');
+  }
+
+  /* ---------- øvelsesdata: historikk, forslag og estimert maks ---------- */
+  var e1rm = function (kg, reps) { return reps <= 1 ? kg : kg * (1 + reps / 30); };      // Epleys formel
+  function exKey(n) { return String(n || '').trim().toLowerCase(); }
+  // Alle ganger en øvelse er logget, nyeste først: [{ d, kind, sets: [[kg, reps], …] }]
+  function exHistory(name) {
+    var k = exKey(name), out = [];
+    state.log.forEach(function (l) {
+      (l.ex || []).forEach(function (e) { if (exKey(e.n) === k && e.s && e.s.length) out.push({ d: l.d, kind: l.kind, sets: e.s }); });
+    });
+    return out;
+  }
+  function unitOf(kind) { return kind === 'core' || kind === 'mobilitet' ? 'sek' : kind === 'kondisjon' ? 'min' : 'reps'; }
+  function setsText(sets, kind) {
+    var w = sets[0][0] > 0, same = sets.every(function (x) { return x[0] === sets[0][0] && x[1] === sets[0][1]; });
+    if (same) return sets.length + ' × ' + fmtNum(sets[0][1]) + (w ? ' × ' + fmtNum(sets[0][0]) + ' kg' : ' ' + unitOf(kind));
+    return sets.map(function (x) { return fmtNum(x[1]) + (w ? ' × ' + fmtNum(x[0]) : ''); }).join(', ') + (w ? ' kg' : ' ' + unitOf(kind));
+  }
+  // Klarte du målet i alle sett sist, foreslår appen litt mer: vekt, én rep til eller fem sekunder til.
+  function suggestion(r) {
+    var h = exHistory(r.name)[0];
+    if (!h) return null;
+    var out = { last: h };
+    if (!r.target) return out;
+    var hit = h.sets.length >= (r.nsets || 1) && h.sets.every(function (x) { return x[1] >= r.target; });
+    if (!hit) return out;
+    var maxKg = Math.max.apply(null, h.sets.map(function (x) { return x[0]; }));
+    var bestRep = Math.max.apply(null, h.sets.map(function (x) { return x[1]; }));
+    if (sess.kind === 'styrke' && maxKg > 0) { out.kg = maxKg + state.settings.inc; out.text = 'Du klarte alle repetisjonene sist. Prøv ' + fmtNum(out.kg) + ' kg i dag.'; }
+    else if (sess.kind === 'styrke') { out.reps = bestRep + 1; out.text = 'Du klarte alle repetisjonene sist. Prøv ' + out.reps + ' reps i dag.'; }
+    else if (sess.kind === 'core') { out.reps = bestRep + 5; out.text = 'Du holdt hele tiden sist. Prøv ' + out.reps + ' sekunder i dag.'; }
+    return out;
+  }
+  function stopHold() { clearInterval(holdT); holdT = null; hold = null; }
+  function holdTick() {
+    if (!hold) return;
+    var left = hold.end - Date.now(), b = document.getElementById('hold-' + hold.r + '-' + hold.s);
+    if (left <= 0) {
+      var set = sess && sess.rows[hold.r] && sess.rows[hold.r].sets[hold.s];
+      if (set) set.done = true;
+      stopHold(); beep(1046, 0.4); buzz([200, 80, 200]); saveDraft(); render();
+      return;
+    }
+    var sec = Math.ceil(left / 1000);
+    if (sec <= 3 && sec !== hold.beeped) { hold.beeped = sec; beep(880, 0.1); }
+    if (b) b.textContent = sec;
   }
 
   /* ---------- personlige rekorder ---------- */
@@ -844,9 +1061,27 @@
       case 'finish': finishSession(); break;
       case 'cancel':
         if (armed !== 'cancel') { armed = 'cancel'; render(); break; }
-        armed = ''; sess = null; saveDraft(); stopRest(); render(); break;
+        armed = ''; stopHold(); sess = null; saveDraft(); stopRest(); render(); break;
       case 'rest': startRest(Number(t.dataset.s)); break;
       case 'celebrate-x': celebrate = null; render(); break;
+      case 'rate': if (sess) { var rv = +t.dataset.k; sess.rate = sess.rate === rv ? 0 : rv; saveDraft(); render(); } break;
+      case 'bump': {
+        var br = sess && sess.rows[+t.dataset.r], sgg = br && suggestion(br);
+        if (!sgg) break;
+        br.sets.forEach(function (x) { if (x.done) return; if (sgg.kg != null) x.kg = sgg.kg; if (sgg.reps != null) x.reps = sgg.reps; });
+        br.bumped = true; saveDraft(); render(); break;
+      }
+      case 'hold': {
+        var hr = +t.dataset.r, hs = +t.dataset.s;
+        if (hold && hold.r === hr && hold.s === hs) { stopHold(); render(); break; }
+        ensureAudio(); stopHold();
+        var secs = num(sess.rows[hr].sets[hs].reps);
+        if (secs <= 0) break;
+        hold = { r: hr, s: hs, end: Date.now() + secs * 1000, beeped: 0 };
+        holdT = setInterval(holdTick, 200); beep(660, 0.15); render(); break;
+      }
+      case 'hist-open': openLog = openLog === t.dataset.id ? null : t.dataset.id; render(); break;
+      case 'ex-sel': exSel = t.dataset.k; render(); break;
       case 'iv-pre':
         state.iv.work = +t.dataset.w; state.iv.rest = +t.dataset.r; state.iv.rounds = +t.dataset.n;
         save(); render(); break;
@@ -978,6 +1213,8 @@
         });
         break;
       }
+      case 'snote': if (sess) { sess.note = t.value.slice(0, 500); saveDraft(); } break;
+      case 'exsel': exSel = t.value; render(); break;
       case 'sk': sess.rows[+t.dataset.r].sets[+t.dataset.s].kg = num(t.value); saveDraft(); break;
       case 'sr': sess.rows[+t.dataset.r].sets[+t.dataset.s].reps = num(t.value); saveDraft(); break;
     }

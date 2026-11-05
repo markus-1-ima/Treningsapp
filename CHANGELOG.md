@@ -4,6 +4,25 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 
 ---
 
+## Torsdag 5. november 2026
+
+**Bedre økter**
+- Alle sett lagres nå med vekt og reps, så appen husker nøyaktig hva du gjorde.
+- «Sist»-linje under hver øvelse viser hva du gjorde forrige gang.
+- Forslag om å øke: klarte du alle repetisjonene sist, foreslår appen litt mer vekt (eller én rep / fem sekunder til). «Bruk forslaget» fyller inn tallene.
+- Holdøvelser (planke osv.) har egen tidtaker per sett som piper og krysser av settet når tiden er ute.
+- Gi økta en vurdering (fra «Veldig lett» til «Helt maks») og skriv et notat før du fullfører.
+
+**Mer fremgang**
+- «Denne uka»: økter, treningstid, løftet vekt og nye rekorder, sammenlignet med forrige uke.
+- Treningskalender med en rute per dag de siste 20 ukene.
+- Graf per øvelse: estimert maks (1RM) eller beste sett over tid, pluss de siste gangene.
+- Muskelgrupper: hvor mange sett hver muskelgruppe har fått siste 30 dager, og hva du ikke har trent.
+- Trykk på en økt i historikken for å se alle settene, vurderingen og notatet.
+- Rekordlisten viser estimert maks for vektøvelser.
+
+---
+
 ## Onsdag 4. november 2026
 
 **Nytt utseende i hele appen**
