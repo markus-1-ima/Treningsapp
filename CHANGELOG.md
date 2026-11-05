@@ -28,6 +28,11 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 - Innstillinger: navnet ditt (hilsen på I dag-kortet), lyd og vibrasjon av/på, standard hviletid, hvor mye forslagene øker med, stangvekt og hvilke skiver du har.
 - Data og sikkerhetskopi: last ned alt som én fil, last ned historikken som regneark, gjenopprett fra fil og slett alle data.
 
+**Installerbar app**
+- Treningsbok kan legges på hjemskjermen og åpner da som en egen app med eget ikon.
+- Appen virker uten nett. Det du gjør mens du er frakoblet lagres, og sendes til kontoen når du er på nett igjen.
+- «Installer»-knapp i Mer-fanen (på iPhone står det hvordan du legger den til fra Safari).
+
 ---
 
 ## Onsdag 4. november 2026

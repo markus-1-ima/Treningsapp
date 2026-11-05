@@ -119,7 +119,7 @@
   var todayIdx = function () { return (new Date().getDay() + 6) % 7; };
 
   /* ---------- persistence ---------- */
-  var syncLabels = { loading: 'Henter …', saving: 'Lagrer …', saved: 'Lagret', local: 'Lagret lokalt', error: 'Kunne ikke lagre' };
+  var syncLabels = { loading: 'Henter …', saving: 'Lagrer …', saved: 'Lagret', local: 'Lagret lokalt', error: 'Kunne ikke lagre', offline: 'Frakoblet – lagres senere' };
   function setSync(k) { var el = $('#sync'); if (el) { el.textContent = syncLabels[k]; el.setAttribute('data-state', k); } }
   var saveT = null, saving = false, again = false;
   function save() {
@@ -1333,6 +1333,14 @@
       route();
       if (snap.exists) setSync('saved'); else save();
     }, function (err) {
+      var owner0 = null, local0 = null;
+      try { owner0 = localStorage.getItem('tb_owner'); local0 = localStorage.getItem('tb_state'); } catch (e) { }
+      if (owner0 === u.uid && local0) {
+        state = normalize(JSON.parse(local0)); ref = docRef;
+        var out0 = byId('logout'); out0.hidden = false; out0.title = u.email || '';
+        showApp(); route(); setSync('offline');
+        return;
+      }
       var code = (err && err.code) || 'ukjent';
       var why = 'Kunne ikke hente dataene dine.';
       if (code === 'permission-denied') why = 'Ingen tilgang til databasen. Sjekk at Firestore-reglene er publisert.';
@@ -1360,6 +1368,13 @@
   };
   (window.TBX || []).forEach(function (f) { try { f(TB); } catch (e) { if (window.console) console.error(e); } });
   window.TBX = { push: function (f) { f(TB); } };
+
+  /* ---------- installerbar app og frakoblet bruk ---------- */
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () { }); });
+  }
+  window.addEventListener('offline', function () { if (ref) setSync('offline'); });
+  window.addEventListener('online', function () { if (ref) { setSync('saving'); flush(); } });
 
   /* ---------- boot ---------- */
   var themeSel = document.querySelector('#theme');

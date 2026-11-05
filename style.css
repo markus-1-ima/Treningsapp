@@ -78,7 +78,7 @@ button, input, select { font: inherit; color: inherit; }
 .brand h1 { font-family: var(--font-display); font-weight: 700; font-size: 28px; letter-spacing: -.005em; line-height: 1; }
 .sync { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); white-space: nowrap; }
 .sync::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex: none; }
-.sync[data-state="loading"]::before, .sync[data-state="saving"]::before { background: var(--muted); }
+.sync[data-state="loading"]::before, .sync[data-state="saving"]::before, .sync[data-state="offline"]::before { background: var(--muted); }
 .sync[data-state="error"]::before { background: var(--danger); }
 .sync[data-state="error"] { color: var(--danger); }
 .nav { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
