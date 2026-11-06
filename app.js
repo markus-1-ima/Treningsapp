@@ -679,40 +679,6 @@
     { name: 'Mobilitet hjemme', kind: 'mobilitet', min: 10, ex: [['Katt-ku', 2, 45, 0], ['Hoftebøyer-strekk', 2, 45, 0], ['Hamstring-strekk', 2, 45, 0]] }
   ];
   var LEVELS = { 1: 'Nybegynner', 2: 'Middels', 3: 'Krevende' };
-  var HOME_GROUPS = ['Overkropp', 'Ben', 'Core', 'Kondisjon', 'Mobilitet', 'Treningssenter'];
-  var HOME_LIB = [
-    ['Armhevinger', 'Overkropp', 1, 'Hendene litt bredere enn skuldrene, kroppen i rett linje. Senk brystet mot gulvet. Knærne i gulvet gjør den lettere.'],
-    ['Diamant-armhevinger', 'Overkropp', 2, 'Hendene tett sammen under brystet og albuene inn mot kroppen. Tar hardere på baksiden av armene.'],
-    ['Dips på stol', 'Overkropp', 2, 'Hendene på kanten av en stabil stol. Senk hoftene rett ned til albuene er bøyd omtrent 90 grader.'],
-    ['Pike-armhevinger', 'Overkropp', 3, 'Hoftene høyt i en omvendt V. Senk hodet mot gulvet og press deg opp igjen. Trener skuldrene.'],
-    ['Knebøy', 'Ben', 1, 'Føttene i skulderbredde. Skyv hoftene bakover og ned, og la knærne følge tærne.'],
-    ['Utfall', 'Ben', 1, 'Ta et langt steg frem og senk det bakre kneet mot gulvet. Press opp med den fremre hælen.'],
-    ['Bulgarsk utfall', 'Ben', 2, 'Den bakre foten hviler på en stol eller sofa. Senk deg rett ned på det fremre beinet.'],
-    ['Bekkenløft', 'Ben', 1, 'Ligg på ryggen med bøyde knær. Løft hoftene til kroppen er rett fra skuldre til knær, og klem rumpa.'],
-    ['Tåhev', 'Ben', 1, 'Stå på kanten av en trapp og hev hælene så høyt du kan. Senk rolig ned igjen.'],
-    ['Vegg-sitt', 'Ben', 1, 'Ryggen mot veggen og lårene parallelt med gulvet. Hold posisjonen.'],
-    ['Planke', 'Core', 1, 'Albuene under skuldrene og kroppen i en rett linje. Stram mage og rumpe.'],
-    ['Sideplanke', 'Core', 2, 'Støtt deg på en albue og løft hoftene. Hold kroppen rett fra hode til føtter.'],
-    ['Dødbille', 'Core', 1, 'Ligg på ryggen med armer og bein i været. Senk motsatt arm og bein mot gulvet uten at korsryggen løfter seg.'],
-    ['Bird dog', 'Core', 1, 'På alle fire. Strekk motsatt arm og bein ut og hold hoftene i ro.'],
-    ['Superman', 'Core', 1, 'Ligg på magen. Løft armer og bein samtidig og hold i ett sekund.'],
-    ['Jumping jacks', 'Kondisjon', 1, 'Hopp bena ut til siden og armene over hodet, og tilbake igjen i jevn rytme.'],
-    ['Høye knær', 'Kondisjon', 1, 'Løp på stedet og løft knærne opp til hoftehøyde.'],
-    ['Burpees', 'Kondisjon', 3, 'Ned i armhevingsposisjon, hopp føttene inn og hopp opp med armene over hodet.'],
-    ['Katt-ku', 'Mobilitet', 1, 'På alle fire. Rund og svai ryggen i rolig tempo sammen med pusten.'],
-    ['Hoftebøyer-strekk', 'Mobilitet', 1, 'I utfallsposisjon med bakre kne i gulvet. Skyv hoftene forsiktig fremover.'],
-    ['Hamstring-strekk', 'Mobilitet', 1, 'Sittende med ett bein strukket frem. Len deg frem fra hoftene med rett rygg.'],
-    // Treningssenter (med stang og manualer)
-    ['Benkpress', 'Treningssenter', 2, 'Ligg på benken med føttene i gulvet. Senk stanga kontrollert til brystet og press den rett opp igjen.'],
-    ['Knebøy med stang', 'Treningssenter', 2, 'Stanga hviler på øvre del av ryggen. Skyv hoftene bakover og ned til lårene er vannrette, og press opp gjennom hælene.'],
-    ['Markløft', 'Treningssenter', 3, 'Stanga over midten av foten. Hold ryggen rett, press gulvet bort med beina og reis deg med stanga tett inntil kroppen.'],
-    ['Rumensk markløft', 'Treningssenter', 2, 'Lett bøy i knærne. Skyv hoftene bakover og senk stanga langs lårene til du kjenner strekk bak på lårene.'],
-    ['Skulderpress', 'Treningssenter', 2, 'Stå med stanga foran skuldrene. Press den rett opp over hodet til armene er strake, og senk den rolig.'],
-    ['Roing med stang', 'Treningssenter', 2, 'Bøy deg fremover med rett rygg. Trekk stanga inn mot magen og klem skulderbladene sammen.'],
-    ['Nedtrekk', 'Treningssenter', 1, 'Sitt med knærne under puta. Trekk stanga ned til øvre del av brystet og slipp den rolig opp igjen.'],
-    ['Bicepscurl', 'Treningssenter', 1, 'En manual i hver hånd. Bøy armene og løft manualene mot skuldrene uten å svaie med kroppen.']
-  ];
-  var homeFilter = 'Alle';
   function homeProgram(i) {
     var h = HOME_PROGRAMS[i];
     var have = state.programs.filter(function (p) { return p.name === h.name; })[0];
@@ -732,19 +698,11 @@
         '<div class="row-actions"><button class="btn btn-primary btn-sm" data-act="home-start" data-i="' + i + '">Start nå</button>' +
         '<button class="btn btn-sm" data-act="home-add" data-i="' + i + '"' + (added ? ' disabled' : '') + '>' + (added ? '✓ I programmene' : 'Legg til i programmer') + '</button></div></article>';
     });
-    h += '</div><h3 class="subhead">Øvelsesbibliotek</h3><p class="sub">Fargede deler av figuren viser hva som jobber mest.' + (window.TBEX ? ' Flere øvelser, også med utstyr, finner du under <a href="#ovelser">Øvelser</a>.' : '') + '</p><div class="chips" role="group" aria-label="Filtrer øvelser">';
-    ['Alle'].concat(HOME_GROUPS).forEach(function (g) {
-      h += '<button class="chip" data-act="hf" data-k="' + esc(g) + '" aria-pressed="' + (g === homeFilter) + '">' + g + '</button>';
-    });
-    h += '</div><div class="libgrid">';
-    HOME_LIB.filter(function (x) { return homeFilter === 'Alle' || x[1] === homeFilter; }).forEach(function (x) {
-      var pips = '';
-      for (var i = 1; i <= 3; i++) pips += '<i' + (i <= x[2] ? ' class="on"' : '') + '></i>';
-      var holdTxt = (window.TBAnim && TBAnim.isHold(x[0])) ? ' · Holdøvelse' : '';
-      h += '<article class="panel libcard">' + (window.TBAnim ? TBAnim.html(x[0]) : '') + '<div class="lib-top"><h4>' + esc(x[0]) + '</h4><span class="lvl" title="Nivå: ' + LEVELS[x[2]] + '">' + pips + '</span></div>' +
-        '<div class="sub">' + esc(x[1]) + ' · ' + LEVELS[x[2]] + holdTxt + '</div><p>' + esc(x[3]) + '</p></article>';
-    });
-    return h + '</div>';
+    h += '</div>';
+    // Øvelsene ligger i Øvelser-fanen, med filter for øvelser uten utstyr
+    h += '<div class="panel install"><div><b>Øvelser uten utstyr</b><p class="sub">Alle øvelsene, med forklaring og animasjon, ligger i Øvelser-fanen.</p></div>' +
+      '<button class="btn btn-primary" data-act="ex-open" data-eq="kv">Se øvelser uten utstyr</button></div>';
+    return h;
   }
 
   /* ---------- render + routing ---------- */
@@ -1210,7 +1168,6 @@
         shownEx[exName] = !shownEx[exName];
         render(); break;
       }
-      case 'hf': homeFilter = t.dataset.k; render(); break;
       case 'home-add': homeProgram(+t.dataset.i); render(); break;
       case 'home-start':
         if (sess || iv) { go('okt'); break; }

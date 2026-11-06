@@ -6,6 +6,20 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 
 ## Fredag 6. november 2026
 
+**Bedre animasjoner**
+- Figurene ligner mer på en kropp: muskler på armer og bein, hender, føtter, bredere skuldre og hofter og et mer naturlig hode.
+- Bevegelser med flere stillinger, som løping, gange, burpees og olympiske løft, glir jevnt videre i stedet for å stoppe opp i hver stilling.
+- 60 bilder i sekundet når én eller to animasjoner vises på skjermen, så bevegelsen ser jevnere ut.
+- Mykere lys, og en svak skygge på gulvet der føtter, hender og kropp er nær gulvet.
+
+**Brystøvelsene rettet**
+- Albuene går ut til siden og ned i benkpress og brystpress, og bakover i armhevinger og dips, i stedet for å knekke rett frem.
+- Kortere benk, så beina går ned til gulvet på hver side i stedet for å ligge langs benken.
+- Armhevinger på knærne har knærne i gulvet.
+
+**Hjemme**
+- Øvelsesbiblioteket er fjernet fra Hjemme-fanen, siden alle øvelsene ligger i Øvelser. «Se øvelser uten utstyr» åpner Øvelser med bare øvelser uten utstyr.
+
 **Ny fane: Øvelser**
 - 215 øvelser samlet på ett sted: bryst, rygg, skuldre, armer, ben, core, helkropp, kondisjon og mobilitet.
 - Hver øvelse har forklaring, tips, hvilke muskler den trener, utstyr, nivå og hva den måles i.

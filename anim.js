@@ -32,18 +32,18 @@
   var LOWCHAIR = '<path class="prop" d="M20 82 L54 82 M24 82 L24 106 M50 82 L50 106 M20 82 L20 56"/>';
   var WALL = '<path class="prop wall" d="M60 -12 L60 106"/>';
   var STEP = '<path class="prop solid" d="M93 106 L93 94 L150 94 L150 106 Z"/>';
-  var BENCH = '<path class="prop" d="M44 85 L114 85 M52 85 L52 106 M106 85 L106 106"/>';
+  var BENCH = '<path class="prop" d="M60 85 L118 85 M66 85 L66 106 M112 85 L112 106"/>';
   var SEAT = '<path class="prop" d="M78 77 L106 77 M92 77 L92 106 M84 106 L100 106"/>';
-  var BENCH_BOX = [44, 80, 114, 106], SEAT_BOX = [78, 74, 106, 106];
+  var BENCH_BOX = [60, 80, 118, 106], SEAT_BOX = [78, 74, 106, 106];
   var CHAIR_BOX = [26, 42, 66, 106], LOWCHAIR_BOX = [20, 56, 54, 106], WALL_BOX = [58, 30, 62, 106], STEP_BOX = [93, 94, 150, 106];
 
   var DEFS = [
     // ---------- Overkropp ----------
-    { name: 'Armhevinger', hi: ['arms'], az: 9, p: [
+    { name: 'Armhevinger', hi: ['arms'], az: 9, pole: [-1, 0.5, 0.8], p: [
       { h: [89.9, 80.4], t: -16.3, a: [119, 104], f: [40, 95], fa: 80 },
       { h: [91.8, 90.6], t: -4.9, a: [119, 104], f: [40, 95], fa: 80 }] },
 
-    { name: 'Diamant-armhevinger', hi: ['arms'], az: 1.8, p: [
+    { name: 'Diamant-armhevinger', hi: ['arms'], az: 1.8, pole: [-0.6, 0.4, 1], p: [
       { h: [89.9, 80.4], t: -16.3, a: [112, 104], f: [40, 95], fa: 80 },
       { h: [91.8, 90.6], t: -4.9, a: [112, 104], f: [40, 95], fa: 80 }] },
 
@@ -140,9 +140,10 @@
     // ---------- Treningssenter (stang og manualer) ----------
     // bar: 'barbell' (stang med skiver), 'latbar' (stang uten skiver, med kabel) eller 'dumbbell' (manual i hver hånd).
     // az = hvor bredt grepet er (hendenes avstand fra midten). faceUp = ligger på ryggen med hodet mot høyre.
-    { name: 'Benkpress', hi: ['arms'], bar: 'barbell', az: 13, faceUp: true, props: BENCH, box: BENCH_BOX, k: [1, 1], e: [-1, -1], p: [
-      { h: [70, 80], t: 0, d: -8, a: [100, 46], f: [48, 104] },
-      { h: [70, 80], t: 0, d: -8, a: [95, 64], f: [48, 104] }] },
+    { name: 'Benkpress', hi: ['arms'], bar: 'barbell', az: 13, faceUp: true, props: BENCH, box: BENCH_BOX, k: [1, 1], e: [-1, -1],
+      pole: [-0.25, -0.75, 1], legZ: 11, cam: [34, 20], p: [
+      { h: [70, 80], t: 0, d: -8, a: [100, 48], f: [50, 104], fa: -10 },
+      { h: [70, 80], t: 0, d: -8, a: [95, 71], f: [50, 104], fa: -10 }] },
 
     { name: 'Knebøy med stang', hi: ['legs'], bar: 'barbell', barAt: 'back', az: 13, e: [-1, -1], p: [
       { h: [100, 53], t: -88, a: [94, 21], f: [100, 104] },
@@ -182,7 +183,7 @@
   var LOWCHAIR3 = [[-63, 22.5, 0, 34, 3, 30], [-76, 10.5, 12, 3, 21, 3], [-76, 10.5, -12, 3, 21, 3], [-50, 10.5, 12, 3, 21, 3], [-50, 10.5, -12, 3, 21, 3], [-80, 37, 0, 3, 26, 30]];
   var WALL3 = [[-42, 60, 0, 4, 120, 90]];
   var STEP3 = [[21.5, 6, 0, 57, 12, 40]];
-  var BENCH3 = [[-21, 19, 0, 70, 4, 13], [-48, 8.5, 0, 4, 17, 10], [6, 8.5, 0, 4, 17, 10]];
+  var BENCH3 = [[-11, 19, 0, 58, 4, 13], [-34, 8.5, 0, 4, 17, 10], [12, 8.5, 0, 4, 17, 10]];
   var SEAT3 = [[-8, 27.5, 0, 28, 3, 22], [-8, 13, 0, 4, 26, 4], [-8, 1, 0, 16, 2, 16]];
 
   var NAMED = {
@@ -231,7 +232,7 @@
       var pb = primBounds(ex.prims);
       ex.box = ex.box ? [Math.min(ex.box[0], pb[0]), Math.min(ex.box[1], pb[1]), Math.max(ex.box[2], pb[2]), Math.max(ex.box[3], pb[3])] : pb;
     }
-    ex.r3 = ex.p.some(function (p) { return p.tw || p.ra || p.rb || p.rf || p.rg; });
+    ex.r3 = !!(ex.pole || ex.poleL || ex.legZ) || ex.p.some(function (p) { return p.tw || p.ra || p.rb || p.rf || p.rg; });
     ex.att = ex.att || [];
     BY[ex.name] = ex;
     LC[ex.name.toLowerCase()] = ex;
@@ -288,8 +289,37 @@
   }
 
   function cycleLen(ex) { return ex.p.reduce(function (a, p) { return a + (p.s || ex.seg); }, 0); }
+  function totalLen(ex) {
+    if (ex.cycle) return cycleLen(ex);
+    var n = ex.p.length;
+    if (n <= 2 || ex.step) return 2 * (n - 1) * ex.seg;
+    var seq = ex.p.concat(ex.p.slice(1, n - 1).reverse());
+    return seq.reduce(function (a, p) { return a + (p.s || ex.seg); }, 0);
+  }
+  // Kurve gjennom fire stillinger (Catmull-Rom), så bevegelsen glir videre i stedet for å stoppe i hver stilling.
+  function spline(P0, P1, P2, P3, s, ex) {
+    var A1 = mix(P0, P1, s + 1, ex), A2 = mix(P1, P2, s, ex), A3 = mix(P2, P3, s - 1, ex);
+    var o = mix(mix(A1, A2, (s + 1) / 2, ex), mix(A2, A3, s / 2, ex), s, ex);
+    // Hender og føtter skal ikke gå gjennom gulvet selv om kurven svinger litt forbi
+    ['a', 'b', 'f', 'g'].forEach(function (k) {
+      if (o[k] && P1[k] && P2[k]) { var lim = Math.max(P1[k][1], P2[k][1], GY - 1.4); if (o[k][1] > lim) o[k] = [o[k][0], lim]; }
+    });
+    if (o.h && P1.h && P2.h) { var lh = Math.max(P1.h[1], P2.h[1]); if (o.h[1] > lh) o.h = [o.h[0], lh]; }
+    return o;
+  }
   function poseAt(ex, t) {
     var n = ex.p.length, u = t / ex.seg, i, j, s;
+    if (n > 2 && !ex.step) {
+      var seq = ex.p, m0;
+      if (!ex.cycle) { seq = ex.p.concat(ex.p.slice(1, n - 1).reverse()); }    // frem og tilbake: endene stopper av seg selv
+      m0 = seq.length;
+      var tot0 = 0, k0, acc0 = 0, d0, tt0;
+      for (k0 = 0; k0 < m0; k0++) tot0 += seq[k0].s || ex.seg;
+      tt0 = ((t % tot0) + tot0) % tot0;
+      for (k0 = 0; k0 < m0; k0++) { d0 = seq[k0].s || ex.seg; if (tt0 < acc0 + d0 || k0 === m0 - 1) break; acc0 += d0; }
+      var s0 = Math.min(1, (tt0 - acc0) / d0);
+      return spline(seq[(k0 - 1 + m0) % m0], seq[k0], seq[(k0 + 1) % m0], seq[(k0 + 2) % m0], s0, ex);
+    }
     if (ex.cycle) {
       var tot = cycleLen(ex), tt = t % tot, acc = 0;
       for (i = 0; i < n; i++) { var d = ex.p[i].s || ex.seg; if (tt < acc + d || i === n - 1) { s = Math.min(1, (tt - acc) / d); break; } acc += d; }
@@ -411,6 +441,22 @@
       if (isArm && !front && azv) {                             // bredt (eller smalt) grep: skuldrene står, hendene og albuene flyttes
         var sgn = z < 0 ? -1 : 1;
         S = V(J[0], sgn * 6.2); E = V(J[1], sgn * (6.2 + (azv - 6.2) * 0.8)); H = V(J[2], sgn * azv);
+      }
+      var pole = isArm ? ex.pole : ex.poleL;
+      if (pole && !front) {
+        // Albuen (eller kneet) bøyer seg i 3D mot en retning, f.eks. ut til siden og ned i benkpress
+        var sd = z < 0 ? -1 : 1, l1 = isArm ? L.up : L.thigh, l2 = isArm ? L.fore : L.shin;
+        if (!isArm && ex.legZ) { H = [H[0], H[1], sd * ex.legZ]; if (T) T = [T[0], T[1], sd * ex.legZ]; }
+        var dv3 = sub(H, S), d3 = len(dv3), u3 = norm(dv3), mx3 = l1 + l2;
+        var dd3 = Math.min(Math.max(d3, Math.abs(l1 - l2) + 0.01), mx3 - 0.01);
+        if (d3 > dd3) { var sh3 = sub(add3(S, u3, dd3), H); H = add3(H, sh3, 1); if (T) T = add3(T, sh3, 1); }
+        var al3 = (l1 * l1 - l2 * l2 + dd3 * dd3) / (2 * dd3), hh3 = Math.sqrt(Math.max(0, l1 * l1 - al3 * al3));
+        if (d3 > mx3 * 0.93) hh3 *= Math.max(0, (mx3 - d3) / (mx3 * 0.07));
+        var pv = norm([pole[0], pole[1], pole[2] * sd]), pd = dot(pv, u3), pp3 = norm([pv[0] - u3[0] * pd, pv[1] - u3[1] * pd, pv[2] - u3[2] * pd]);
+        E = add3(add3(S, u3, al3), pp3, hh3);
+      } else if (!isArm && ex.legZ && !front) {
+        var sz = z < 0 ? -1 : 1;
+        E = [E[0], E[1], sz * ex.legZ * 0.85]; H = [H[0], H[1], sz * ex.legZ]; if (T) T = [T[0], T[1], sz * ex.legZ];
       }
       if (front && !isArm && ex.kneeOut) {
         // Brede knebøy forfra: knærne går ut over tærne, og tærne peker litt ut
@@ -647,21 +693,27 @@
     '}'].join('\n');
   var FS = [
     'precision mediump float;',
-    'uniform vec3 uC, uCam, uL, uBg; uniform vec4 uShadC; uniform float uMode; uniform vec3 uFloor;',
+    'uniform vec3 uC, uCam, uL, uBg; uniform vec4 uShadC; uniform float uMode; uniform vec3 uFloor; uniform vec3 uAo[4];',
     'varying vec3 vN, vW;',
     'void main(){',
-    '  if (uMode > 1.5) { float d = length(vW.xz - uFloor.xy) / uFloor.z; gl_FragColor = vec4(mix(uC, uBg, smoothstep(0.35, 1.0, d)), 1.0); return; }',
+    '  if (uMode > 1.5) {',
+    '    float d = length(vW.xz - uFloor.xy) / uFloor.z, ao = 0.0;',
+    '    for (int i = 0; i < 4; i++) { if (uAo[i].z > 0.0) ao += 1.0 - smoothstep(0.0, uAo[i].z, length(vW.xz - uAo[i].xy)); }',
+    '    vec3 fc = uC * (1.0 - 0.28 * min(ao, 1.0));',
+    '    gl_FragColor = vec4(mix(fc, uBg, smoothstep(0.35, 1.0, d)), 1.0); return;',
+    '  }',
     '  if (uMode > 0.5) { gl_FragColor = uShadC; return; }',
     '  vec3 N = normalize(vN), Ld = normalize(-uL), V = normalize(uCam - vW);',
     '  if (dot(N, V) < 0.0) N = -N;',
-    '  float dif = max(dot(N, Ld), 0.0), hemi = 0.5 + 0.5 * N.y;',
-    '  float spec = pow(max(dot(N, normalize(Ld + V)), 0.0), 28.0) * 0.22;',
-    '  float rim = pow(1.0 - max(dot(N, V), 0.0), 3.0) * 0.16;',
-    '  gl_FragColor = vec4(uC * (0.34 + 0.24 * hemi + 0.55 * dif) + vec3(spec + rim), 1.0);',
+    '  float dif = max((dot(N, Ld) + 0.3) / 1.3, 0.0), hemi = 0.5 + 0.5 * N.y;',
+    '  float fill = max(dot(N, normalize(vec3(-0.7, 0.25, 0.6))), 0.0) * 0.16;',
+    '  float spec = pow(max(dot(N, normalize(Ld + V)), 0.0), 36.0) * 0.24;',
+    '  float rim = pow(1.0 - max(dot(N, V), 0.0), 2.6) * 0.17;',
+    '  gl_FragColor = vec4(uC * (0.28 + 0.22 * hemi + 0.5 * dif + fill) + vec3(spec + rim), 1.0);',
     '}'].join('\n');
 
   function meshSphere(gl) {
-    var P = [], I = [], la = 14, lo = 20;
+    var P = [], I = [], la = 18, lo = 28;
     for (var i = 0; i <= la; i++) {
       var th = i * Math.PI / la;
       for (var j = 0; j <= lo; j++) {
@@ -676,7 +728,7 @@
     return mesh(gl, P, P, I);
   }
   function meshCyl(gl) {
-    var P = [], N = [], I = [], seg = 18;
+    var P = [], N = [], I = [], seg = 24;
     for (var j = 0; j <= seg; j++) {
       var ph = j * 2 * Math.PI / seg, c = Math.cos(ph), s = Math.sin(ph);
       P.push(c, 0, s, c, 1, s); N.push(c, 0, s, c, 0, s);
@@ -741,7 +793,7 @@
       if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
       gl.useProgram(pr);
       var u = {};
-      ['uVP', 'uM', 'uTaper', 'uCyl', 'uShad', 'uLs', 'uL', 'uC', 'uCam', 'uBg', 'uShadC', 'uMode', 'uFloor'].forEach(function (n) { u[n] = gl.getUniformLocation(pr, n); });
+      ['uVP', 'uM', 'uTaper', 'uCyl', 'uShad', 'uLs', 'uL', 'uC', 'uCam', 'uBg', 'uShadC', 'uMode', 'uFloor', 'uAo'].forEach(function (n) { u[n] = gl.getUniformLocation(pr, n); });
       G = { cv: cv, gl: gl, u: u, aP: gl.getAttribLocation(pr, 'aP'), aN: gl.getAttribLocation(pr, 'aN'),
         m: { sph: meshSphere(gl), cyl: meshCyl(gl), cylc: meshCylCap(gl), box: meshBox(gl), quad: meshQuad(gl) }, bound: null, col: null, colAt: 0 };
       gl.enableVertexAttribArray(G.aP); gl.enableVertexAttribArray(G.aN);
@@ -834,6 +886,15 @@
     var hip = V(sk.hip, 0), apex = V(sk.apex, 0), neck = V(sk.neck, 0), head = V(sk.head, 0);
     var side = front ? norm(cross(norm(sub(neck, hip)), [0, 0, 1])) : [0, 0, 1];
     var zA = front ? 0 : 6.2, zL = front ? 0 : 3.6;
+    var J3 = joints3(ex, sk, pose || {});
+    // Muskel: en avlang kule langs et lem, litt forskjøvet om det trengs
+    var bulge = function (A, B, at, r1, r2, ln, key, off) {
+      var d = sub(B, A), l0 = len(d);
+      if (l0 < 1) return;
+      var C = add3(A, d, at); if (off) C = add3(C, off, 1);
+      var du = norm(d), sd = Math.abs(du[2]) < 0.85 ? [0, 0, 1] : [1, 0, 0];
+      push('ell', mEll(C, d, sd, r1, l0 * ln, r2), key);
+    };
     // Overkropp: bekken, rygg i to deler (følger krummingen) og bryst
     var up1 = sub(apex, hip), up2 = sub(neck, apex);
     if (len(up1) < 0.01) up1 = sub(neck, hip);
@@ -842,33 +903,46 @@
     push('cyl', mBone(hip, apex), 'torso', [4.5, 4.8]);
     push('cyl', mBone(apex, neck), 'torso', [4.8, 5.2]);
     push('ell', mEll(add3(apex, norm(up2), len(up2) * 0.55), up2, side, 5.6, 9.2, front ? 8.4 : 8.2), 'torso');
+    // Skuldre og hofter binder armene og beina til kroppen, så figuren får bredde
+    if (J3.a && J3.b) push('cyl', mBone(J3.a[0], J3.b[0]), 'torso', [3.3, 3.3]);
+    if (J3.f && J3.g && !front) push('cyl', mBone(J3.f[0], J3.g[0]), 'torso', [4.3, 4.3]);
     // Hals, hode og nese (nesen viser hvilken vei figuren ser)
-    push('cyl', mBone(neck, head), 'head', [2.4, 2.2]);
-    push('sph', mSph(head, 6.1), 'head');
+    push('cyl', mBone(neck, head), 'head', [2.5, 2.2]);
     var face = front ? [0, 0, 1] : [sk.face[0], -sk.face[1], 0];
     if (pose && pose.tw) face = rodr(face, norm(sub(neck, hip)), pose.tw * R);
-    var hd = norm(sub(head, neck));
-    push('sph', mSph(add3(add3(head, face, 5.4), hd, 0.6), 1.7), 'nose');
+    var hd = norm(sub(head, neck)), lat = cross(hd, face);
+    if (len(lat) < 0.1) lat = [0, 0, 1];
+    push('ell', mEll(add3(head, hd, 0.3), hd, lat, 6.0, 6.6, 5.5), 'head');
+    push('sph', mSph(add3(add3(head, face, 5.7), hd, 0.4), 1.6), 'nose');
     // Armer og bein. Mangler armen eller beinet på andre siden, speiles den nære.
-    var J3 = joints3(ex, sk, pose || {});
     function limbSet(key, src, s3, isArm) {
       var c = J3[key];
       if (!c) return;
       var S = c[0], E = c[1], H = c[2];
       if (isArm) {
-        push('sph', mSph(S, 3.2), key);
-        push('cyl', mBone(S, E), key, [2.9, 2.4]);
-        push('sph', mSph(E, 2.45), key);
-        push('cyl', mBone(E, H), key, [2.35, 1.9]);
-        push('sph', mSph(H, 2.4), key);
+        push('sph', mSph(S, 3.2), key);                                   // skulder
+        push('cyl', mBone(S, E), key, [2.6, 2.1]);
+        bulge(S, E, 0.45, 2.65, 2.5, 0.5, key);                           // overarm
+        push('sph', mSph(E, 2.2), key);
+        push('cyl', mBone(E, H), key, [2.25, 1.6]);
+        bulge(E, H, 0.34, 2.3, 2.15, 0.48, key);                          // underarm
+        push('sph', mSph(H, 1.7), key);
+        var fd = norm(sub(H, E));
+        push('ell', mEll(add3(H, fd, 2.1), fd, Math.abs(fd[2]) < 0.85 ? [0, 0, 1] : [1, 0, 0], 1.35, 2.5, 2.05), key);   // hånd
       } else {
-        push('sph', mSph(S, 3.9), key);
-        push('cyl', mBone(S, E), key, [4.0, 3.1]);
-        push('sph', mSph(E, 3.15), key);
-        push('cyl', mBone(E, H), key, [3.0, 2.2]);
-        push('sph', mSph(H, 2.3), key);
+        push('sph', mSph(S, 4.0), key);
+        push('cyl', mBone(S, E), key, [4.1, 3.0]);
+        bulge(S, E, 0.42, 4.15, 3.95, 0.52, key);                         // lår
+        push('sph', mSph(E, 3.0), key);
+        push('cyl', mBone(E, H), key, [2.9, 1.9]);
+        var mid = add3(S, sub(H, S), 0.5), kd = sub(E, mid), kl = len(kd);
+        bulge(E, H, 0.34, 2.85, 2.65, 0.46, key, kl > 1.5 ? add3([0, 0, 0], norm(kd), -0.5) : null);  // legg
+        push('sph', mSph(H, 2.0), key);
         var T = c[3];
-        if (T) { push('cyl', mBone(H, T), key, [2.2, 1.6]); push('sph', mSph(T, 1.6), key); }
+        if (T) {
+          var ft = sub(T, H), fl = len(ft), fn = norm(ft);
+          push('ell', mEll(add3(H, ft, 0.42), ft, Math.abs(fn[2]) < 0.85 ? [0, 0, 1] : [1, 0, 0], 1.7, fl * 0.5 + 1.8, 2.2), key);   // fot
+        }
       }
     }
     limbSet('b', 'a', -zA, true); limbSet('g', 'f', -zL, false);
@@ -922,6 +996,7 @@
     var gh = G.cv.height;
 
     var pose = reduce ? poseAt(ex, (+el.getAttribute('data-pose') || 0) * ex.seg) : poseAt(ex, t);
+    var V3 = function (q) { return [q[0] - 100, GY - q[1], 0]; };
     var sk = skeleton(ex, pose);
     var parts = parts3d(ex, sk, pose);
 
@@ -961,9 +1036,18 @@
       if (col) gl.uniform3fv(u.uC, col);
       gl.drawElements(gl.TRIANGLES, G.m[k].c, gl.UNSIGNED_SHORT, 0);
     }
-    // Gulv
+    // Gulv, med myk kontaktskygge der kroppen er nær gulvet
     var fr = Math.max(vb[2], vb[3]) * 0.75;
     gl.uniform3f(u.uFloor, cx, 0, fr);
+    var J3c = joints3(ex, sk, pose), aoL = [];
+    var aoAdd = function (P, base, lim) { if (!P) return; var r = base * (1 - Math.min(Math.max(P[1], 0), lim) / lim); if (r > 0.5) aoL.push([P[0], P[2], r]); };
+    ['f', 'g'].forEach(function (k) { if (J3c[k]) aoAdd(J3c[k][J3c[k][3] ? 3 : 2], 8, 10); });
+    ['a', 'b'].forEach(function (k) { if (J3c[k]) aoAdd(J3c[k][2], 6, 8); });
+    aoAdd(V3(sk.hip), 14, 14); aoAdd(V3(sk.neck), 12, 12);
+    aoL.sort(function (p, q) { return q[2] - p[2]; });
+    var aoA = new Float32Array(12);
+    for (var ai = 0; ai < 4 && ai < aoL.length; ai++) { aoA[ai * 3] = aoL[ai][0]; aoA[ai * 3 + 1] = aoL[ai][1]; aoA[ai * 3 + 2] = aoL[ai][2]; }
+    gl.uniform3fv(u.uAo, aoA);
     draw({ k: 'quad', M: cols([fr, 0, 0], [0, 1, 0], [0, 0, fr], [cx, 0, 0]) }, 2, C.floor);
     // Skygger: hver piksel mørkes bare én gang (stencil)
     gl.depthMask(false);
@@ -1027,10 +1111,13 @@
   function frame(now) {
     var list = document.querySelectorAll('.anim');
     if (!list.length) { setTimeout(function () { window.requestAnimationFrame(frame); }, 250); return; }
-    if (now - lastFrame >= 32) {                              // rundt 30 bilder i sekundet er nok, og sparer batteri
+    // 60 bilder i sekundet når bare én eller to animasjoner er på skjermen, ellers 30 for å spare batteri
+    var vis = [];
+    for (var i = 0; i < list.length; i++) if (near(list[i])) vis.push(list[i]);
+    if (now - lastFrame >= (vis.length <= 2 ? 15 : 32)) {
       lastFrame = now;
       var t = (now - T0) / 1000;
-      for (var i = 0; i < list.length; i++) if (near(list[i])) draw(list[i], t);
+      for (i = 0; i < vis.length; i++) draw(vis[i], t);
     }
     window.requestAnimationFrame(frame);
   }
@@ -1039,7 +1126,7 @@
     var ex = find(name);
     if (!ex) return '';
     vbox(ex);
-    return '<div class="anim" data-ex="' + esc(ex.name) + '" data-pose="0" data-seg="' + ex.seg + '" data-n="' + ex.p.length + '" data-cycle="' + (ex.cycle ? 1 : 0) + '" data-total="' + r1(ex.cycle ? cycleLen(ex) : 2 * (ex.p.length - 1) * ex.seg) + '"' +
+    return '<div class="anim" data-ex="' + esc(ex.name) + '" data-pose="0" data-seg="' + ex.seg + '" data-n="' + ex.p.length + '" data-cycle="' + (ex.cycle ? 1 : 0) + '" data-total="' + r1(totalLen(ex)) + '"' +
       (reduce ? ' tabindex="0" title="Trykk for å bytte stilling"' : '') +
       ' role="img" aria-label="Animasjon av ' + esc(ex.name.toLowerCase()) + '">' +
       '<svg viewBox="' + ex.vb.join(' ') + '" aria-hidden="true" focusable="false">' +

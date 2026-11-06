@@ -195,6 +195,9 @@
     TB.field('exlvl', function (t) { f.lvl = +t.value || 0; remember(); refreshList(); });
     TB.action('exg', function (t) { f.g = t.dataset.g; openName = ''; remember(); TB.render(); });
     TB.action('ex-clear', function () { f = { q: '', g: 'Alle', eq: '', lvl: 0 }; openName = ''; remember(); TB.render(); });
+    TB.action('ex-open', function (t) {                // fra Hjemme: åpne Øvelser med et utstyrsfilter
+      f = { q: '', g: 'Alle', eq: t.dataset.eq || '', lvl: 0 }; openName = ''; remember(); TB.go('ovelser');
+    });
     TB.action('exo', function (t) { openName = openName === t.dataset.k ? '' : t.dataset.k; addMsg = ''; refreshList(true); });
 
     function entryFor(e) {
