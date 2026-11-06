@@ -4,6 +4,23 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 
 ---
 
+## Fredag 6. november 2026
+
+**Ny fane: Øvelser**
+- 215 øvelser samlet på ett sted: bryst, rygg, skuldre, armer, ben, core, helkropp, kondisjon og mobilitet.
+- Hver øvelse har forklaring, tips, hvilke muskler den trener, utstyr, nivå og hva den måles i.
+- Søk på norsk eller engelsk, også uten æ, ø og å («kneboy» finner knebøy, «bench press» finner benkpress).
+- Filtrer på muskelgruppe, utstyr (for eksempel uten utstyr, manualer eller kettlebell) og nivå. Filtrene huskes til neste gang.
+- Øvelser med animasjon er merket, og animasjonen vises når du åpner øvelsen.
+- «Din fremgang» viser hvor mange ganger du har gjort øvelsen, hva du gjorde sist og rekorden din.
+- «Legg til i program» eller «Nytt program med denne» rett fra øvelsen.
+- Øvelser fra programmene dine som ikke finnes i listen, vises under «Fra programmene».
+- Når du skriver inn en øvelse i et program, kommer forslag fra listen.
+- Muskelgruppene under Fremgang blir mer presise, fordi appen vet hvilken gruppe hver øvelse hører til.
+- Menyen har fått en sjuende fane, og den får plass også på smale telefoner.
+
+---
+
 ## Torsdag 5. november 2026
 
 **Lagring rettet**

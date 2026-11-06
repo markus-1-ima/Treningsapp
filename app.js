@@ -426,7 +426,7 @@
         '<select class="inp" data-f="pkind" data-p="' + esc(p.id) + '" aria-label="Type">' + kopts + '</select></div>';
       h += '<div><div class="exlab' + nk + '"><span>Øvelse</span><span>Sett</span><span>' + K.unit + '</span>' + (kg ? '<span>Kg</span>' : '') + '<span></span></div></div>';
       p.exercises.forEach(function (e) {
-        h += '<div class="exrow' + nk + '"><input class="inp" data-f="en" data-p="' + esc(p.id) + '" data-e="' + esc(e.id) + '" value="' + esc(e.name) + '" aria-label="Øvelse" maxlength="60">' +
+        h += '<div class="exrow' + nk + '"><input class="inp" data-f="en" data-p="' + esc(p.id) + '" data-e="' + esc(e.id) + '" value="' + esc(e.name) + '" aria-label="Øvelse" maxlength="60"' + (window.TBEX ? ' list="tb-exnames"' : '') + '>' +
           '<input class="inp" type="number" inputmode="numeric" min="1" data-f="es" data-p="' + esc(p.id) + '" data-e="' + esc(e.id) + '" value="' + esc(e.sets) + '" aria-label="Sett">' +
           '<input class="inp" type="number" inputmode="decimal" min="0" data-f="er" data-p="' + esc(p.id) + '" data-e="' + esc(e.id) + '" value="' + esc(e.reps) + '" aria-label="' + K.unit + '">' +
           (kg ? '<input class="inp" type="number" inputmode="decimal" min="0" step="0.5" data-f="ek" data-p="' + esc(p.id) + '" data-e="' + esc(e.id) + '" value="' + esc(e.kg) + '" aria-label="Kilo">' : '') +
@@ -436,6 +436,10 @@
       h += '<div class="row-actions"><button class="btn btn-sm" data-act="add-ex" data-p="' + esc(p.id) + '">+ Øvelse</button>' +
         '<button class="btn btn-sm btn-ghost btn-danger" data-act="del-prog" data-p="' + esc(p.id) + '">' + (armed === key ? 'Slett for godt?' : 'Slett program') + '</button></div></article>';
     });
+    if (window.TBEX) {
+      h += '<p class="sub">Trenger du ideer? Under <a href="#ovelser">Øvelser</a> finner du ' + TBEX.count + ' øvelser med forklaring.</p>';
+      h += '<datalist id="tb-exnames">' + TBEX.names().map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>';
+    }
     return h;
   }
 
@@ -575,6 +579,8 @@
     ['Core', /planke|dødbille|bird|mage|sit-?up|crunch|hollow|russian/]
   ];
   function groupOf(name, kind) {
+    var known = window.TBEX && TBEX.group(name);
+    if (known) return known;
     var n = exKey(name);
     for (var i = 0; i < GROUP_RULES.length; i++) if (GROUP_RULES[i][1].test(n)) return GROUP_RULES[i][0];
     return kind === 'kondisjon' ? 'Kondisjon' : kind === 'mobilitet' ? 'Mobilitet' : kind === 'core' ? 'Core' : 'Annet';
@@ -726,7 +732,7 @@
         '<div class="row-actions"><button class="btn btn-primary btn-sm" data-act="home-start" data-i="' + i + '">Start nå</button>' +
         '<button class="btn btn-sm" data-act="home-add" data-i="' + i + '"' + (added ? ' disabled' : '') + '>' + (added ? '✓ I programmene' : 'Legg til i programmer') + '</button></div></article>';
     });
-    h += '</div><h3 class="subhead">Øvelsesbibliotek</h3><p class="sub">Fargede deler av figuren viser hva som jobber mest.</p><div class="chips" role="group" aria-label="Filtrer øvelser">';
+    h += '</div><h3 class="subhead">Øvelsesbibliotek</h3><p class="sub">Fargede deler av figuren viser hva som jobber mest.' + (window.TBEX ? ' Flere øvelser, også med utstyr, finner du under <a href="#ovelser">Øvelser</a>.' : '') + '</p><div class="chips" role="group" aria-label="Filtrer øvelser">';
     ['Alle'].concat(HOME_GROUPS).forEach(function (g) {
       h += '<button class="chip" data-act="hf" data-k="' + esc(g) + '" aria-pressed="' + (g === homeFilter) + '">' + g + '</button>';
     });
