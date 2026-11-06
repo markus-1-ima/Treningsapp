@@ -614,3 +614,5 @@ a.btn { text-decoration: none; }
 .exadd-row select { flex: 1 1 160px; width: auto; }
 .exadd .msg { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .exhead .chev { transition: none; } }
+.anim .at { stroke: var(--muted); stroke-width: 2px; fill: none; }
+.anim .at.solid { fill: var(--muted); stroke: none; opacity: .7; }

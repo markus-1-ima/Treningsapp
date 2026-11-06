@@ -19,6 +19,14 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 - Muskelgruppene under Fremgang blir mer presise, fordi appen vet hvilken gruppe hver øvelse hører til.
 - Menyen har fått en sjuende fane, og den får plass også på smale telefoner.
 
+**Animasjoner til alle øvelsene**
+- Alle 215 øvelsene i Øvelser-fanen har nå en 3D-animasjon (før var det 29).
+- Nytt utstyr i animasjonene: skrå og nedoverskrå benk, stang til pullups, dipsstativ, kabeltårn, maskiner (beinpress, beinspark, lårcurl, hack squat, butterfly, brystpress, roing), kettlebell, medisinball, strikk, maghjul, hoppetau, kampliner, slede, sykkel, romaskin, skiergometer, ellipsemaskin, tredemølle, ski og staver, boksesekk, trapp, kasse og skumrulle.
+- Figurene kan nå løfte armer og bein ut til siden (sidehev, flyes, brannhydrant), vri overkroppen (russian twist, vedhugger) og trekke skuldrene opp (skuldertrekk).
+- Øvelser der det er lettest å se bevegelsen forfra, som sidehev, sumo-knebøy og sideutfall, vises forfra.
+- Rettet de gamle: armhevinger har hendene litt bredere enn skuldrene, og diamant-armhevinger har hendene samlet under brystet.
+- Strekfigurene som brukes når 3D ikke virker, viser også utstyret.
+
 ---
 
 ## Torsdag 5. november 2026
