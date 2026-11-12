@@ -8,6 +8,7 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 
 **Animasjoner rettet**
 - Føttene peker nå bort fra hodet i benkpress, skrå benkpress, benkpress med manualer, skrå manualpress, gulvpress, flyes med manualer, pullover med manual og fransk press, i stedet for bakover mot benken.
+- Sittende kabelroing: knærne bøyer seg nå oppover med føttene mot fotplata, i stedet for å knekke ned mot skinnen.
 
 ---
 
