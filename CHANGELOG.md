@@ -14,6 +14,17 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 - Muscle-up: trekker seg høyt med hodet bak stanga, får brystet over stanga og dipser opp til strake armer, med albuene bakover.
 - Stanga til pullups, dødheng og hengende mageøvelser står nå på stolper bak figuren, og kameraet ser mer fra siden, så stolpene ikke skjuler figuren eller står i veien for beina.
 
+**Alle animasjonene gjennomgått**
+- Albuer og knær bøyer seg alltid den veien kroppen faktisk bøyer seg, tærne peker fremover, og knær og albuer som ligger på gulvet hviler på det i stedet for å gå gjennom.
+- Stanga går foran kroppen og ansiktet i markløft, rumensk markløft, skulderpress, push press, Z-press, frontknebøy og curl med stang, i stedet for gjennom beina eller hodet.
+- Manualer, kettlebells og kofferter henger ved siden av beina, og i øvelser som vises forfra holdes hendene foran kroppen i stedet for inni den.
+- Figuren ligger oppå benken i stedet for å synke ned i den, blant annet i nedoverskrå benkpress, hip thrust og ryggekstensjon.
+- Frivending, rykk, støt og thrusters har fått nye og mer naturlige bevegelser: stanga løftes tett inntil kroppen, tas imot i knebøy og presses rett opp over hodet.
+- Sumo-markløft vises nå fra siden med bred stilling, knærne ut og hendene innenfor knærne.
+- Trap bar-markløft har fått en ordentlig trap bar, og kabelcrunch trekker i et kabeltau ovenfra.
+- 90/90 hofte: knærne faller helt ned mot gulvet på hver side, som vindusviskere.
+- Turkish get-up snur seg ikke lenger feil vei rundt midt i bevegelsen.
+
 ---
 
 ## Fredag 6. november 2026

@@ -150,15 +150,16 @@
       { h: [78, 78.3], t: -58, a: [88, 48], f: [100, 104] }] },
 
     { name: 'Markløft', hi: ['legs', 'core'], bar: 'barbell', az: 8, p: [
-      { h: [72, 76], t: -22, a: [104, 97], f: [100, 104] },
-      { h: [96, 53], t: -88, a: [99, 90], f: [100, 104] }] },
+      { h: [72, 76], t: -22, a: [106, 97], f: [100, 104] },
+      { h: [97, 53], t: -91, a: [104, 56], f: [100, 104] }] },
 
     { name: 'Rumensk markløft', hi: ['legs'], bar: 'barbell', az: 8, p: [
-      { h: [96, 53], t: -88, a: [99, 90], f: [98, 104] },
-      { h: [80, 58], t: -20, a: [101, 88], f: [98, 104] }] },
+      { h: [97, 53], t: -91, a: [104, 56], f: [98, 104] },
+      { h: [80, 58], t: -20, a: [106, 86], f: [98, 104] }] },
 
     { name: 'Skulderpress', hi: ['arms'], bar: 'barbell', az: 9.5, p: [
-      { h: [100, 53], t: -90, a: [107, 20], f: [100, 104] },
+      { h: [100, 53], t: -90, a: [107.5, 24], f: [100, 104] },
+      { h: [100, 53], t: -89, d: -102, a: [108.5, 6], f: [100, 104] },          // hodet litt bakover mens stanga passerer ansiktet
       { h: [100, 53], t: -90, a: [102, -12], f: [100, 104] }] },
 
     { name: 'Roing med stang', hi: ['arms', 'core'], bar: 'barbell', az: 8, p: [
@@ -169,7 +170,7 @@
       { h: [92, 74], t: -96, a: [96, 6], f: [116, 104] },
       { h: [92, 74], t: -100, a: [106, 46], f: [116, 104] }] },
 
-    { name: 'Bicepscurl', hi: ['arms'], bar: 'dumbbell', p: [
+    { name: 'Bicepscurl', hi: ['arms'], bar: 'dumbbell', az: 9, p: [
       { h: [100, 53], t: -90, a: [102, 60], f: [100, 104] },
       { h: [100, 53], t: -90, a: [109, 28], f: [100, 104] }] },
 
@@ -210,6 +211,7 @@
   var HI_WORDS = { legs: ['f', 'g'], arms: ['a', 'b'], core: ['torso'] };
   DEFS.forEach(function (ex) {
     ex.seg = ex.seg || 1.1;
+    ex.eFix = ex.eFix || false;
     ex.k = ex.k || [-1, -1];
     ex.e = ex.e || [1, 1];
     ex.props = ex.props || '';
@@ -223,6 +225,11 @@
       if (p.fa == null) p.fa = 0;
       if (p.ga == null) p.ga = p.fa;
       ['tw', 'ra', 'rb', 'rf', 'rg', 'rp', 'sy'].forEach(function (k) { if (p[k] == null) p[k] = 0; });
+    });
+    ex.p.forEach(function (p, i) {
+      if (!i) return;
+      var q = ex.p[i - 1];
+      ['t', 'd'].forEach(function (k) { while (p[k] - q[k] > 180) p[k] -= 360; while (p[k] - q[k] < -180) p[k] += 360; });
       if (p.az == null && ex.az) p.az = ex.az;
     });
     // Rekvisitter beskrevet med boks/sylinder/stang/ball i samme koordinater som stillingene
@@ -232,7 +239,25 @@
       var pb = primBounds(ex.prims);
       ex.box = ex.box ? [Math.min(ex.box[0], pb[0]), Math.min(ex.box[1], pb[1]), Math.max(ex.box[2], pb[2]), Math.max(ex.box[3], pb[3])] : pb;
     }
-    ex.r3 = !!(ex.pole || ex.poleL || ex.legZ) || ex.p.some(function (p) { return p.tw || p.ra || p.rb || p.rf || p.rg; });
+    if (ex.front) {
+      // Forfra peker albuene utover fra kroppen. Velg bøyeretning per arm ut fra alle stillingene.
+      ex.eFront = [0, 1].map(function (i) {
+        var sc = 0, key = i ? 'b' : 'a', alt = i ? 'a' : 'b';
+        ex.p.forEach(function (q) {
+          var hand = q[key] || q[alt]; if (!hand) return;
+          var th = q.t * R, nk = [q.h[0] + L.torso * Math.cos(th), q.h[1] + L.torso * Math.sin(th)];
+          var px = Math.sin(th), py = -Math.cos(th), sg = i ? -1 : 1;
+          var S = [nk[0] + sg * px * 6 - Math.cos(th) * 2, nk[1] + sg * py * 6 - Math.sin(th) * 2];
+          var dx = hand[0] - S[0], dy = hand[1] - S[1], d = Math.sqrt(dx * dx + dy * dy) || 1;
+          var bend = Math.max(0, 1 - d / (L.up + L.fore));
+          var ox = S[0] - nk[0], oy = S[1] - nk[1];
+          sc += bend * ((-dy / d) * ox + (dx / d) * oy);          // perp(SH) · utover
+        });
+        return sc < 0 ? -1 : 1;
+      });
+      if (ex.eFix) ex.eFront = ex.e;
+    }
+    ex.r3 = !!(ex.pole || ex.poleL || ex.legZ || ex.hz || ex.fz) || ex.p.some(function (p) { return p.tw || p.ra || p.rb || p.rf || p.rg; });
     ex.att = ex.att || [];
     BY[ex.name] = ex;
     LC[ex.name.toLowerCase()] = ex;
@@ -352,21 +377,55 @@
       hf = [hip[0] + px * 4, hip[1] + py * 4]; hg = [hip[0] - px * 4, hip[1] - py * 4];
     }
     if (p.sy) { sa = [sa[0], sa[1] - p.sy]; sb = [sb[0], sb[1] - p.sy]; }   // skuldrene løftes (skuldertrekk)
+    // Albuer og knær bøyer seg alltid den veien kroppen tillater: albuen mot baksiden av overarmen og kneet mot forsiden av låret.
+    // Sett fra siden gir det samme bøyeretning uansett stilling, bare speilet når figuren ligger på ryggen (faceUp).
+    var side = ex.faceUp ? -1 : 1;
+    var eA = ex.eFix ? ex.e : ex.front ? ex.eFront : [side, side];
+    var kA = ex.kFix || ex.front ? ex.k : [-side, -side];
+    // Går kneet eller albuen gjennom gulvet, legges det på gulvet, og leggen eller underarmen følger etter
+    function floorJoint(s, r, l1, l2, rj, re) {
+      var fl = GY - rj;
+      if (r[0][1] <= fl || s[1] > fl) return r;
+      var dy = fl - s[1];
+      if (dy > l1) return r;
+      var dx = Math.sqrt(l1 * l1 - dy * dy) * (r[0][0] >= s[0] ? 1 : -1);
+      var K = [s[0] + dx, fl], vx = r[1][0] - K[0], vy = r[1][1] - K[1], vl = Math.sqrt(vx * vx + vy * vy) || 1;
+      var E = [K[0] + vx / vl * l2, K[1] + vy / vl * l2];
+      if (E[1] > GY - re) { var sx2 = vx >= 0 ? 1 : -1, ey = GY - re - K[1]; E = [K[0] + sx2 * Math.sqrt(Math.max(0, l2 * l2 - ey * ey)), GY - re]; }
+      return [K, E];
+    }
     function arm(s, hand, dir) {
       if (!hand) return null;
-      var r = ik(s, hand, L.up, L.fore, dir);
+      var r = floorJoint(s, ik(s, hand, L.up, L.fore, dir), L.up, L.fore, 2.2, 1.7);
       return [s, r[0], r[1]];
     }
     function leg(s, foot, dir, ang) {
       if (!foot) return null;
-      var r = ik(s, foot, L.thigh, L.shin, dir);
-      var toe = ex.toe !== false ? [r[1][0] + ex.tl * Math.cos(ang * R), r[1][1] + ex.tl * Math.sin(ang * R)] : null;
+      var r = floorJoint(s, ik(s, foot, L.thigh, L.shin, dir), L.thigh, L.shin, 3, 2);
+      var toe = null;
+      if (ex.toe !== false) {
+        var tx = Math.cos(ang * R), ty = Math.sin(ang * R);
+        if (!ex.front) {
+          // Tærne peker alltid til forsiden av leggen (eller langs leggen når foten er strukket), aldri bakover
+          var sx = r[1][0] - r[0][0], sy = r[1][1] - r[0][1], sl = Math.sqrt(sx * sx + sy * sy) || 1;
+          sx /= sl; sy /= sl;
+          var fx = side * sy, fy = -side * sx;                   // forsiden av leggen
+          if (tx * fx + ty * fy < -0.2) { var dd = tx * sx + ty * sy; tx = 2 * dd * sx - tx; ty = 2 * dd * sy - ty; }
+        }
+        // Tærne går ikke gjennom gulvet: foten vippes opp ved ankelen
+        var lim = GY - 0.4;
+        if (r[1][1] + ex.tl * ty > lim && r[1][1] < lim) {
+          var sn = (lim - r[1][1]) / ex.tl, cs = Math.sqrt(Math.max(0, 1 - sn * sn));
+          tx = tx < 0 ? -cs : cs; ty = sn;
+        }
+        toe = [r[1][0] + ex.tl * tx, r[1][1] + ex.tl * ty];
+      }
       return [s, r[0], r[1], toe];
     }
     var sk = {
       hip: hip, neck: neck, head: head, ctl: ctl, apex: apex, sa: sa, sb: sb, hf: hf, hg: hg,
-      a: arm(sa, p.a, ex.e[0]), b: arm(sb, p.b, ex.e[1]),
-      f: leg(hf, p.f, ex.k[0], p.fa), g: leg(hg, p.g, ex.k[1], p.ga),
+      a: arm(sa, p.a, eA[0]), b: arm(sb, p.b, eA[1]),
+      f: leg(hf, p.f, kA[0], p.fa), g: leg(hg, p.g, kA[1], p.ga),
       face: [-Math.sin(th), Math.cos(th)]                       // brystets retning, vinkelrett på overkroppen
     };
     if (ex.faceUp) sk.face = [-sk.face[0], -sk.face[1]];
@@ -443,7 +502,13 @@
         S = V(J[0], sgn * 6.2); E = V(J[1], sgn * (6.2 + (azv - 6.2) * 0.8)); H = V(J[2], sgn * azv);
       }
       var pole = isArm ? ex.pole : ex.poleL;
-      if (pole && !front) {
+      if (front && isArm && ex.hz) {
+        // Forfra: hendene holdes foran kroppen (en kettlebell, stanga eller hendene samlet), albuene ut og ned
+        H = [H[0], H[1], ex.hz];
+        pole = [J[0][0] < sk.hip[0] ? -1 : 1, -0.6, 0.2];
+      }
+      if (front && !isArm && ex.fz) { H = [H[0], H[1], ex.fz]; if (T) T = [T[0], T[1], ex.fz]; }   // forfra: føttene står foran hofta (sittende)
+      if (pole && (!front || (isArm && ex.hz))) {
         // Albuen (eller kneet) bøyer seg i 3D mot en retning, f.eks. ut til siden og ned i benkpress
         var sd = z < 0 ? -1 : 1, l1 = isArm ? L.up : L.thigh, l2 = isArm ? L.fore : L.shin;
         if (!isArm && ex.legZ) { H = [H[0], H[1], sd * ex.legZ]; if (T) T = [T[0], T[1], sd * ex.legZ]; }
@@ -452,7 +517,7 @@
         if (d3 > dd3) { var sh3 = sub(add3(S, u3, dd3), H); H = add3(H, sh3, 1); if (T) T = add3(T, sh3, 1); }
         var al3 = (l1 * l1 - l2 * l2 + dd3 * dd3) / (2 * dd3), hh3 = Math.sqrt(Math.max(0, l1 * l1 - al3 * al3));
         if (d3 > mx3 * 0.93) hh3 *= Math.max(0, (mx3 - d3) / (mx3 * 0.07));
-        var pv = norm([pole[0], pole[1], pole[2] * sd]), pd = dot(pv, u3), pp3 = norm([pv[0] - u3[0] * pd, pv[1] - u3[1] * pd, pv[2] - u3[2] * pd]);
+        var pv = norm(front ? pole : [pole[0], pole[1], pole[2] * sd]), pd = dot(pv, u3), pp3 = norm([pv[0] - u3[0] * pd, pv[1] - u3[1] * pd, pv[2] - u3[2] * pd]);
         E = add3(add3(S, u3, al3), pp3, hh3);
       } else if (!isArm && ex.legZ && !front) {
         var sz = z < 0 ? -1 : 1;
@@ -579,9 +644,22 @@
       } else if (t === 'landmine') {                            // stang som står fast i gulvet i den ene enden
         var Hl = o.at === 'mid' ? mid() : hand(o.at || 'a'), A0 = P3(o.to, 0);
         if (Hl) {
-          var Hc = [Hl[0], Hl[1], 0], dl = norm(sub(Hc, A0)), tip = add3(Hc, dl, 7);
+          var Hc = [Hl[0], Hl[1], 0], dl = norm(sub(Hc, A0)), tip = add3(Hc, dl, o.tip != null ? o.tip : 7);
           line(A0, tip, 1.1, 'steel');
-          line(add3(Hc, dl, -10), add3(Hc, dl, -6.5), 8.5, 'iron');
+          if (o.pend) line(add3(Hc, dl, 2.5), add3(Hc, dl, 6), o.pr || 8.5, 'iron');      // skivene ytterst, forbi hendene
+          else line(add3(Hc, dl, -10), add3(Hc, dl, -6.5), o.pr || 8.5, 'iron');
+        }
+      } else if (t === 'trap') {                                // sekskantet stang rundt kroppen, med håndtak i hver hånd
+        var Ta = hand('a'), Tb = hand('b');
+        if (Ta && Tb) {
+          var zt = Math.abs(Ta[2]), cxT = (Ta[0] + Tb[0]) / 2, cyT = (Ta[1] + Tb[1]) / 2, fr = 9;
+          [-1, 1].forEach(function (sz) { line([cxT - 4, cyT, sz * zt], [cxT + 4, cyT, sz * zt], 1, 'steel'); });
+          line([cxT - fr, cyT, -zt + 2], [cxT - fr, cyT, zt - 2], 1, 'steel'); line([cxT + fr, cyT, -zt + 2], [cxT + fr, cyT, zt - 2], 1, 'steel');
+          [-1, 1].forEach(function (sz) {
+            line([cxT - fr, cyT, sz * (zt - 2)], [cxT - 4, cyT, sz * zt], 1, 'steel'); line([cxT + fr, cyT, sz * (zt - 2)], [cxT + 4, cyT, sz * zt], 1, 'steel');
+            line([cxT, cyT, sz * zt], [cxT, cyT, sz * (zt + 12)], 1.1, 'steel');
+            line([cxT, cyT, sz * (zt + 5)], [cxT, cyT, sz * (zt + 9)], 9, 'iron');
+          });
         }
       } else if (t === 'rope') {                                // hoppetau rundt kroppen
         var A1 = hand('a'), B1 = hand('b') || [A1[0], A1[1], -A1[2]], ph = p.rp * R, n = 12, prev = null;
@@ -958,13 +1036,14 @@
     // Stang med skiver, eller en manual i hver hånd
     if (sk.bar) {
       var B = V(sk.bar, 0), half = ex.barHalf || (ex.bar === 'latbar' ? 24 : 30);
-      if (ex.r3 && !ex.barAt && J3.a) { var Ha = J3.a[2], Hb = J3.b ? J3.b[2] : Ha; B = [(Ha[0] + Hb[0]) / 2, (Ha[1] + Hb[1]) / 2, 0]; }
+      if (ex.r3 && !ex.barAt && J3.a) { var Ha = J3.a[2], Hb = J3.b ? J3.b[2] : Ha; B = [(Ha[0] + Hb[0]) / 2, (Ha[1] + Hb[1]) / 2, ex.front ? (Ha[2] + Hb[2]) / 2 : 0]; }
       var BX = ex.front ? [1, 0, 0] : [0, 0, 1], bp = function (k) { return add3(B, BX, k); };
       push('cylc', mBone(bp(-half), bp(half)), 'steel', [1.1, 1.1]);
       if (ex.bar === 'barbell') {
-        [[17, 21.5], [-21.5, -17]].forEach(function (z2) {
+        var pi = ex.plates || 17;                                 // hvor langt ut skivene sitter
+        [[pi, pi + 4.5], [-pi - 4.5, -pi]].forEach(function (z2) {
           push('cylc', mBone(bp(z2[0]), bp(z2[1])), 'iron', [PLATE_R, PLATE_R]);
-          push('cylc', mBone(bp(z2[0] > 0 ? 15.5 : -17), bp(z2[0] > 0 ? 17 : -15.5)), 'steel', [2.4, 2.4]);
+          push('cylc', mBone(bp(z2[0] > 0 ? pi - 1.5 : -pi), bp(z2[0] > 0 ? pi : -pi + 1.5)), 'steel', [2.4, 2.4]);
         });
       }
       if (ex.cable) push('cyl', mBone(B, [B[0], GY + 30, 0]), 'steel', [0.45, 0.45]);

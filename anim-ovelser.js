@@ -16,12 +16,14 @@
   function o(base, m) { var r = {}, k; for (k in base) r[k] = base[k]; for (k in m) r[k] = m[k]; return r; }
 
   // Rekvisitter som brukes flere steder
-  var FLATBENCH = [['box', 60, 82, 118, 87, 0, 13], ['rod', 66, 87, 66, 106, 2, 0], ['rod', 112, 87, 112, 106, 2, 0]];
+  var FLATBENCH = [['box', 60, 85, 118, 89, 0, 13], ['rod', 66, 89, 66, 106, 2, 0], ['rod', 112, 89, 112, 106, 2, 0]];
   var BENCHP = [-0.25, -0.75, 1];                // albuene ut til siden og ned i press på benk
-  function inclineBench(deg) {                 // sete + skrå ryggstø som stiger mot høyre
-    var r = deg * Math.PI / 180, cx = 72 + 19 * Math.cos(r), cy = 86 - 19 * Math.sin(r);
-    return [['box', 52, 86, 80, 91, 0, 13], ['box', cx - 19, cy - 2.5, cx + 19, cy + 2.5, 0, 13, -deg],
-      ['rod', 66, 91, 66, 106, 2, 0], ['rod', cx + 8, cy + 6, cx + 8, 106, 2, 0]];
+  function inclineBench(deg, hx, hy) {         // sete + skrå ryggstø under ryggen til en figur med hofta i (hx, hy)
+    hx = hx || 72; hy = hy || 82;
+    var r = deg * Math.PI / 180, ux = Math.cos(r), uy = -Math.sin(r), nx = Math.sin(r), ny = Math.cos(r);
+    var cx = hx + ux * 17 + nx * 8.2, cy = hy + uy * 17 + ny * 8.2;
+    return [['box', 50, hy + 5.6, 80, hy + 10.4, 0, 13], ['box', cx - 19, cy - 2.4, cx + 19, cy + 2.4, 0, 13, -deg],
+      ['rod', 64, hy + 10.4, 64, 106, 2, 0], ['rod', cx + 6, cy + 4, cx + 6, 106, 2, 0]];
   }
   function cableTower(x, top) { return [['box', x - 4, top, x + 4, 106, 0, 8], ['ball', x, top + 2, 2.6, 0, 'steel']]; }
   // Stang til pullups, festet med armer til to stolper bak figuren, så stolpene ikke skjuler den eller står i veien for beina
@@ -33,8 +35,8 @@
     { h: [72, 82], t: -35, d: -40, a: [97, 36], f: [48, 104], fa: 180 },
     { h: [72, 82], t: -35, d: -40, a: [89, 61], f: [48, 104], fa: 180 }] });
   add({ name: 'Skrå manualpress', like: 'Skrå benkpress', bar: 'dumbbell', az: 11 });
-  add({ name: 'Nedoverskrå benkpress', hi: ['arms'], bar: 'barbell', az: 13, faceUp: true, k: [1, 1], e: [-1, -1], pole: [-0.1, -0.8, 1], cam: [34, 18],
-    pr: [['box', 54, 76.5, 104, 81.5, 0, 13, 15], ['rod', 66, 80, 66, 106, 2, 0], ['rod', 96, 86, 96, 106, 2, 0], ['cyl', 42, 88, 2.8, -9, 9, 'pad'], ['rod', 42, 88, 52, 106, 1.6, 0]],
+  add({ name: 'Nedoverskrå benkpress', hi: ['arms'], bar: 'barbell', az: 13, faceUp: true, pole: [-0.1, -0.8, 1], cam: [34, 18],
+    pr: [['box', 61.3, 81.9, 99.3, 86.7, 0, 13, 15], ['rod', 70, 87, 70, 106, 2, 0], ['rod', 92, 93, 92, 106, 2, 0], ['cyl', 42, 88, 2.8, -9, 9, 'pad'], ['rod', 42, 88, 52, 106, 1.6, 0]],
     p: [
       { h: [66, 72], t: 15, d: 10, a: [95, 48], f: [40, 86], fa: 170 },
       { h: [66, 72], t: 15, d: 10, a: [89, 75], f: [40, 86], fa: 170 }] });
@@ -60,8 +62,8 @@
     { h: [86, 76], t: -90, a: [100, 48], f: [114, 104] },
     { h: [86, 76], t: -90, a: [117, 47], f: [114, 104] }] });
   add({ name: 'Armhevinger på knærne', hi: ['arms'], az: 9, pole: [-1, 0.5, 0.8], p: [
-    { h: [80, 88], t: -26, a: [108, 104], f: [34, 96], fa: 150 },
-    { h: [82, 95], t: -8, a: [108, 104], f: [36, 94], fa: 150 }] });
+    { h: [80, 88], t: -26, a: [108, 104], f: [33, 103], fa: 180 },
+    { h: [83.5, 95], t: -8, a: [108, 104], f: [33, 103], fa: 180 }] });
   add({ name: 'Skrå armhevinger', hi: ['arms'], az: 9, pole: [-1, 0.5, 0.8], pr: [['box', 112, 84, 150, 106, 0, 30]], p: [
     { h: [84, 71], t: -28, a: [122, 84], f: [40, 100], fa: 80 },
     { h: [86, 78], t: -17, a: [122, 84], f: [40, 100], fa: 80 }] });
@@ -119,18 +121,19 @@
     att: [{ t: 'grip', half: 4, to: [148, 90] }], p: [
       { h: [74, 87], t: -55, a: [128, 72], f: [120, 92], fa: -80 },
       { h: [74, 87], t: -96, a: [96, 70], f: [120, 92], fa: -80 }] });
-  add({ name: 'T-bar-roing', hi: ['arms', 'core'], az: 3, att: [{ t: 'landmine', at: 'mid', to: [30, 104] }], p: [
-    { h: [82, 58], t: -30, a: [106, 76], f: [100, 104], g: [100, 104] },
-    { h: [82, 58], t: -30, a: [100, 60], f: [100, 104], g: [100, 104] }] });
+  add({ name: 'T-bar-roing', hi: ['arms', 'core'], az: 3.5, att: [{ t: 'landmine', at: 'mid', to: [20, 104], pend: true, pr: 7, tip: 8 }], p: [
+    { h: [76, 58], t: -30, a: [106, 77], f: [94, 104], g: [94, 104] },
+    { h: [76, 58], t: -30, a: [101, 62], f: [94, 104], g: [94, 104] }] });
   add({ name: 'Roing i maskin', hi: ['arms'], az: 8, e: [1, 1], att: [{ t: 'torsopad', chest: true }, { t: 'db', at: 'ab', dir: 'y', r: 1.3 }, { t: 'cab', from: 'ab', to: [134, 70], r: 1.1 }],
     pr: [['box', 66, 80, 96, 86, 0, 22, 0, 'pad'], ['rod', 80, 86, 80, 106, 2.2, 0], ['box', 130, 30, 138, 106, 0, 28], ['rod', 105, 50, 132, 50, 1.4, 0]],
     p: [
       { h: [80, 76], t: -82, a: [116, 46], f: [108, 104] },
       { h: [80, 76], t: -82, a: [90, 50], f: [108, 104] }] });
-  add({ name: 'Omvendt roing', hi: ['arms', 'core'], az: 9, pole: [-0.7, -0.7, 0.45],
-    pr: [['cyl', 104, 60, 1.2, -30, 30, 'steel'], ['rod', 104, 60, 104, 106, 1.8, -30], ['rod', 104, 60, 104, 106, 1.8, 30]], p: [
-      { h: [75.4, 95.7], t: -9.3, a: [104, 60], f: [24, 101], fa: -70 },
-      { h: [70.2, 80.2], t: -27, a: [104, 60], f: [24, 101], fa: -70 }] });
+  add({ name: 'Omvendt roing', hi: ['arms', 'core'], az: 9, faceUp: true, pole: [-0.7, -0.7, 0.45],
+    pr: [['cyl', 104, 60, 1.2, -30, 30, 'steel'], ['rod', 104, 60, 138, 60, 1.4, -30], ['rod', 104, 60, 138, 60, 1.4, 30],
+      ['rod', 138, 60, 138, 106, 1.8, -30], ['rod', 138, 60, 138, 106, 1.8, 30]], p: [
+      { h: [89.4, 92.9], t: -9, a: [104, 60], f: [38, 101], fa: -90 },
+      { h: [83.9, 76.6], t: -28, a: [104, 60], f: [38, 101], fa: -90 }] });
   add({ name: 'Renegade row', hi: ['arms', 'core'], az: 8, att: [{ t: 'db', at: 'ab' }], cycle: true, seg: 0.7, p: [
     { h: [89.9, 79.4], t: -16.3, a: [119, 101], b: [119, 101], f: [40, 95], fa: 80 },
     { h: [89.9, 79.4], t: -16.3, a: [106, 84], b: [119, 101], f: [40, 95], fa: 80 },
@@ -143,11 +146,11 @@
     { h: [100, 53], t: -90, a: [101, 54], f: [100, 104], sy: 0 },
     { h: [100, 53], t: -90, a: [101, 47], f: [100, 104], sy: 6.5 }] });
   add({ name: 'Ryggekstensjon', hi: ['core', 'legs'], k: [1, 1],
-    pr: [['box', 72, 64, 92, 70, 0, 18, -45, 'pad'], ['cyl', 46, 95, 2.6, -9, 9, 'pad'], ['box', 30, 99, 54, 103, 0, 22, -45],
-      ['rod', 82, 70, 60, 106, 2, 0], ['rod', 46, 95, 40, 106, 1.6, 0], ['box', 30, 103, 96, 106, 0, 24]],
+    pr: [['box', 63.7, 73.7, 83.7, 79.7, 0, 18, -45, 'pad'], ['cyl', 46, 95, 2.6, -9, 9, 'pad'], ['box', 30, 99, 54, 103, 0, 22, -45],
+      ['rod', 72, 80, 62, 106, 2, 0], ['rod', 46, 95, 40, 106, 1.6, 0], ['box', 30, 103, 96, 106, 0, 24]],
     p: [
-      { h: [77, 63], t: 70, d: 80, a: [80, 85], f: [40, 100], fa: -45 },
-      { h: [77, 63], t: -45, d: -45, a: [96, 51], f: [40, 100], fa: -45 }] });
+      { h: [77, 63], t: 45, d: 55, a: [87, 83], f: [40, 100], fa: -45 },
+      { h: [77, 63], t: -45, d: -45, a: [97, 53], f: [40, 100], fa: -45 }] });
 
   // ================= Skuldre =================
   add({ name: 'Skulderpress med manualer', like: 'Skulderpress', bar: 'dumbbell', az: 11, fx: function (q, i) { q.a = i ? [101, -10] : [103, 22]; } });
@@ -160,15 +163,17 @@
       { h: [86, 76], t: -90, a: [90, 46], f: [114, 104] },
       { h: [86, 76], t: -90, a: [87, 15], f: [114, 104] }] });
   add({ name: 'Push press', hi: ['arms', 'legs'], bar: 'barbell', az: 9.5, cycle: true, p: [
-    { h: [100, 53], t: -90, a: [107, 20], f: [100, 104], s: 0.45 },
-    { h: [97, 60], t: -88, a: [106, 27], f: [100, 104], s: 0.25 },
-    { h: [100, 51], t: -90, a: [104, 2], f: [100, 102], fa: 25, s: 0.35 },
-    { h: [100, 53], t: -90, a: [102, -12], f: [100, 104], s: 0.9 }] });
-  add({ name: 'Landmine-press', hi: ['arms'], att: [{ t: 'landmine', at: 'a', to: [182, 104] }], p: [
+    { h: [100, 53], t: -88, a: [107.5, 24], f: [100, 104], s: 0.45 },
+    { h: [97, 60], t: -88, a: [104.5, 30.5], f: [100, 104], s: 0.25 },
+    { h: [100, 51], t: -89, d: -102, a: [108.5, 4], f: [100, 102], fa: 25, s: 0.3 },
+    { h: [100, 53], t: -90, a: [102, -12], f: [100, 104], s: 0.9 },
+    { h: [100, 53], t: -89, d: -102, a: [108.5, 6], f: [100, 104], s: 0.35 }] });
+  add({ name: 'Landmine-press', hi: ['arms'], att: [{ t: 'landmine', at: 'a', to: [182, 104], tip: 2, pr: 6.5 }], p: [
     { h: [96, 54], t: -82, a: [106, 26], b: [96, 52], f: [106, 104], g: [80, 104] },
     { h: [96, 54], t: -80, a: [126, 2], b: [96, 52], f: [106, 104], g: [80, 104] }] });
   add({ name: 'Z-press', hi: ['arms', 'core'], bar: 'barbell', az: 9.5, p: [
-    { h: [70, 101], t: -90, a: [77, 70], f: [122, 102], fa: -90 },
+    { h: [70, 101], t: -90, a: [77.5, 72], f: [122, 102], fa: -90 },
+    { h: [70, 101], t: -89, d: -102, a: [79, 55], f: [122, 102], fa: -90 },
     { h: [70, 101], t: -90, a: [72, 38], f: [122, 102], fa: -90 }] });
   add({ name: 'Håndstående armhevinger', hi: ['arms'], az: 9, k: [1, 1], e: [1, 1], pr: [['box', 78, -30, 82, 106, 0, 50]], p: [
     { h: [101, 43], t: 90, d: 90, a: [100, 104], f: [86, -8], fa: -90 },
@@ -209,9 +214,9 @@
     { h: [70, 102], t: 0, d: -5, a: [108, 97], ra: 80, f: [10, 102], fa: 180 }] });
 
   // ================= Armer =================
-  add({ name: 'Bicepscurl med stang', like: 'Bicepscurl', bar: 'barbell', az: 8 });
+  add({ name: 'Bicepscurl med stang', like: 'Bicepscurl', bar: 'barbell', az: 8, fx: function (q, i) { if (!i) q.a = [106, 59]; } });
   add({ name: 'Hammercurl', like: 'Bicepscurl', bar: '', att: [{ t: 'db', at: 'ab', dir: 'x' }] });
-  add({ name: 'Omvendt curl', like: 'Bicepscurl', bar: 'latbar', barHalf: 14, az: 8 });
+  add({ name: 'Omvendt curl', like: 'Bicepscurl', bar: 'latbar', barHalf: 14, az: 8, fx: function (q, i) { if (!i) q.a = [106, 59]; } });
   add({ name: 'Konsentrasjonscurl', hi: ['arms'], att: [{ t: 'db', at: 'a' }], k: [-1, -1],
     pr: [['box', 56, 82, 100, 88, 0, 16, 0, 'pad'], ['rod', 64, 88, 64, 106, 2, 0], ['rod', 92, 88, 92, 106, 2, 0]], p: [
       { h: [80, 78], t: -58, a: [104, 86], b: [106, 74], f: [112, 104], g: [108, 104] },
@@ -236,7 +241,7 @@
   add({ name: 'Triceps over hodet', hi: ['arms'], az: 2, e: [-1, -1], att: [{ t: 'db', at: 'a', dir: 'y', r: 4.6 }], p: [
     { h: [100, 53], t: -90, a: [102, -8], f: [100, 104] },
     { h: [100, 53], t: -90, a: [88, 12], f: [100, 104] }] });
-  add({ name: 'Triceps kickback', hi: ['arms'], att: [{ t: 'db', at: 'a' }], e: [-1, -1], p: [
+  add({ name: 'Triceps kickback', hi: ['arms'], az: 9, att: [{ t: 'db', at: 'a' }], p: [
     { h: [80, 58], t: -20, a: [94, 69], b: [114, 74], f: [104, 104], g: [86, 104] },
     { h: [80, 58], t: -20, a: [77, 58], b: [114, 74], f: [104, 104], g: [86, 104] }] });
   add({ name: 'Smal benkpress', like: 'Benkpress', az: 6.5 });
@@ -250,13 +255,13 @@
     { h: [101, 39], t: -91, d: -88, a: [100, -22], f: [97, 90], fa: 70 }] });
 
   // ================= Ben =================
-  add({ name: 'Frontknebøy', hi: ['legs'], bar: 'barbell', barAt: 'front', az: 9, e: [1, 1], p: [
-    { h: [100, 53], t: -88, a: [103, 15], f: [100, 104] },
-    { h: [80, 80], t: -70, a: [95, 44], f: [100, 104] }] });
+  add({ name: 'Frontknebøy', hi: ['legs'], bar: 'barbell', barAt: 'front', az: 9, pole: [0.6, 0.7, 0.6], p: [
+    { h: [100, 53], t: -88, a: [106, 25], f: [100, 104] },
+    { h: [80, 80], t: -70, a: [94.5, 55], f: [100, 104] }] });
   add({ name: 'Goblet squat', hi: ['legs'], az: 2.5, att: [{ t: 'kb', at: 'mid' }], p: [
     { h: [100, 53], t: -90, a: [109, 30], f: [100, 104] },
     { h: [80, 80], t: -70, a: [98, 58], f: [100, 104] }] });
-  add({ name: 'Sumo-knebøy', hi: ['legs'], front: true, kneeOut: true, k: [1, -1], az: 2, att: [{ t: 'kb', at: 'mid' }], p: [
+  add({ name: 'Sumo-knebøy', hi: ['legs'], front: true, kneeOut: true, k: [1, -1], hz: 9, att: [{ t: 'kb', at: 'mid' }], p: [
     { h: [100, 56], t: -90, a: [96, 40], b: [104, 40], f: [82, 104], g: [118, 104] },
     { h: [100, 79], t: -90, a: [96, 62], b: [104, 62], f: [82, 104], g: [118, 104] }] });
   add({ name: 'Hoppknebøy', hi: ['legs'], jump: true, arc: true, cycle: true, p: [
@@ -267,7 +272,7 @@
   add({ name: 'Pistol squat', hi: ['legs'], p: [
     { h: [100, 53], t: -90, a: [126, 30], f: [100, 104], g: [116, 98], ga: 0 },
     { h: [86, 86], t: -55, a: [130, 50], f: [100, 104], g: [138, 82], ga: -60 }] });
-  add({ name: 'Kosakk-knebøy', hi: ['legs'], front: true, kneeOut: true, k: [1, -1], az: 2, cycle: true, seg: 0.9, p: [
+  add({ name: 'Kosakk-knebøy', hi: ['legs'], front: true, kneeOut: true, k: [1, -1], hz: 7, cycle: true, seg: 0.9, p: [
     { h: [100, 66], t: -90, a: [96, 52], b: [104, 52], f: [72, 104], g: [128, 104] },
     { h: [80, 86], t: -84, a: [94, 70], b: [102, 70], f: [72, 104], g: [128, 104] },
     { h: [100, 66], t: -90, a: [96, 52], b: [104, 52], f: [72, 104], g: [128, 104] },
@@ -292,15 +297,16 @@
   add({ name: 'Bakoverutfall', hi: ['legs'], p: [
     { h: [100, 53], t: -90, a: [96, 52], f: [102, 104], g: [100, 104], ga: 0 },
     { h: [94, 78], t: -88, a: [90, 70], f: [112, 104], g: [56, 98], ga: 30 }] });
-  add({ name: 'Sideutfall', hi: ['legs'], front: true, kneeOut: true, k: [1, -1], az: 2, p: [
+  add({ name: 'Sideutfall', hi: ['legs'], front: true, kneeOut: true, k: [1, -1], hz: 7, p: [
     { h: [100, 56], t: -90, a: [96, 40], b: [104, 40], f: [94, 104], g: [106, 104] },
     { h: [78, 82], t: -84, a: [90, 60], b: [98, 60], f: [68, 104], g: [126, 104] }] });
   add({ name: 'Splittknebøy', hi: ['legs'], p: [
     { h: [93, 58], t: -90, a: [89, 56], f: [116, 104], g: [64, 102], ga: 30 },
     { h: [92, 78], t: -89, a: [88, 72], f: [116, 104], g: [62, 98], ga: 30 }] });
   add({ name: 'Step-ups', hi: ['legs'], pr: [['box', 108, 80, 152, 106, 0, 34, 0, 'wood']], p: [
-    { h: [100, 58], t: -84, a: [100, 60], f: [122, 80], g: [96, 104] },
-    { h: [118, 28], t: -90, a: [119, 30], f: [122, 80], g: [118, 79] }] });
+    { h: [100, 56], t: -84, a: [100, 58], f: [122, 77.6], g: [96, 104] },
+    { h: [110, 38], t: -86, a: [110, 40], f: [122, 77.6], g: [102, 82], ga: 40 },
+    { h: [118, 25.6], t: -90, a: [119, 27.6], f: [122, 77.6], g: [118, 76.6] }] });
   add({ name: 'Beinspark', hi: ['legs'], k: [1, 1], att: [{ t: 'pad', at: 'f', up: 0.1, d: [3, 0] }, { t: 'cab', from: 'f', to: [106, 78], r: 1.2 }],
     pr: [['box', 66, 82, 108, 88, 0, 22, 0, 'pad'], ['box', 60, 40, 66, 82, 0, 18, -6, 'pad'], ['box', 50, 30, 58, 106, 0, 22], ['box', 64, 88, 92, 106, 0, 18]], p: [
       { h: [80, 78], t: -95, a: [80, 86], f: [106, 104], fa: 0 },
@@ -315,31 +321,31 @@
   add({ name: 'Nordic hamstring curl', hi: ['legs'], k: [1, 1], seg: 1.6, pr: [['cyl', 52, 99, 2.8, -10, 10, 'pad']], p: [
     { h: [80, 78], t: -90, d: -90, a: [84, 70], f: [54, 102], fa: 180 },
     { h: [103, 91], t: -30, d: -30, a: [140, 102], f: [54, 102], fa: 180 }] });
-  add({ name: 'Enbeins rumensk markløft', hi: ['legs'], att: [{ t: 'kb', at: 'a' }], p: [
+  add({ name: 'Enbeins rumensk markløft', hi: ['legs'], az: 11, att: [{ t: 'kb', at: 'a' }], p: [
     { h: [100, 53], t: -90, a: [101, 55], b: [96, 50], f: [100, 104], g: [100, 104] },
     { h: [96, 56], t: -8, a: [126, 86], b: [124, 82], f: [100, 104], g: [45, 60], ga: 100 }] });
-  add({ name: 'Sumo-markløft', hi: ['legs', 'core'], front: true, kneeOut: true, k: [1, -1], bar: 'barbell', p: [
-    { h: [100, 76], t: -90, a: [93, 104], b: [107, 104], f: [78, 104], g: [122, 104] },
-    { h: [100, 55], t: -90, a: [93, 90], b: [107, 90], f: [78, 104], g: [122, 104] }] });
-  add({ name: 'Trap bar-markløft', hi: ['legs', 'core'], bar: 'barbell', az: 12, p: [
+  add({ name: 'Sumo-markløft', hi: ['legs', 'core'], bar: 'barbell', az: 8, legZ: 16, poleL: [0.12, -0.1, 1], plates: 33, barHalf: 42, cam: [38, 14], p: [
+    { h: [84, 81], t: -36, a: [104, 96], f: [100, 104] },
+    { h: [98, 55], t: -91, a: [102, 58], f: [100, 104] }] });
+  add({ name: 'Trap bar-markløft', hi: ['legs', 'core'], az: 12, att: [{ t: 'trap' }], p: [
     { h: [82, 74], t: -42, a: [100, 97], f: [100, 104] },
-    { h: [98, 53], t: -89, a: [99, 90], f: [100, 104] }] });
+    { h: [98, 53], t: -90, a: [99, 56], f: [100, 104] }] });
   add({ name: 'Good morning', hi: ['legs', 'core'], bar: 'barbell', barAt: 'back', az: 13, e: [-1, -1], p: [
     { h: [100, 53], t: -88, a: [94, 21], f: [100, 104] },
     { h: [86, 56], t: -12, a: [112, 52], f: [100, 104] }] });
   add({ name: 'Hip thrust', hi: ['legs'], bar: 'barbell', az: 13, k: [-1, -1],
-    pr: [['box', 46, 76, 76, 106, 0, 30, 0, 'pad']], p: [
-      { h: [97, 97], t: -140, d: -150, a: [98, 91], f: [128, 104] },
-      { h: [104, 76], t: -184, d: -170, a: [104, 70], f: [128, 104] }] });
+    pr: [['box', 46, 86, 75, 106, 0, 30, 0, 'pad']], p: [
+      { h: [97, 97], t: -140, d: -150, a: [101, 92], f: [128, 104] },
+      { h: [104, 78.7], t: -184, d: -160, a: [104, 72], f: [128, 104] }] });
   add({ name: 'Enbeins bekkenløft', like: 'Bekkenløft', fx: function (q, i) { q.g = i ? [105, 47] : [112, 72]; q.ga = i ? -40 : -20; } });
   add({ name: 'Kettlebell swing', hi: ['legs', 'core'], arc: true, az: 2.5, att: [{ t: 'kb', at: 'mid' }], p: [
     { h: [84, 60], t: -32, a: [96, 76], f: [100, 104] },
     { h: [100, 53], t: -90, a: [131, 26], f: [100, 104] }] });
   add({ name: 'Kabel-kickback', hi: ['legs'], pr: cableTower(140, 30), att: [{ t: 'cab', from: 'f', to: [140, 100] }], p: [
-    { h: [98, 54], t: -78, a: [134, 34], f: [100, 102], g: [102, 104] },
-    { h: [98, 54], t: -74, a: [134, 34], f: [66, 82], fa: 120, g: [102, 104] }] });
-  var ABDSEAT = [['box', 84, 80, 116, 85, 0, 26, 0, 'pad'], ['box', 86, 40, 114, 80, -10, 6, 0, 'pad'], ['box', 92, 85, 108, 106, -4, 18]];
-  add({ name: 'Hofteabduksjon i maskin', hi: ['legs'], front: true, pr: ABDSEAT, p: [
+    { h: [98, 54], t: -78, a: [134, 34], f: [100, 102], g: [102, 104], ga: 0 },
+    { h: [98, 54], t: -74, a: [134, 34], f: [66, 82], fa: 120, g: [102, 104], ga: 0 }] });
+  var ABDSEAT = [['box', 82, 80, 118, 85, 9, 28, 0, 'pad'], ['box', 86, 40, 114, 80, -7, 5, 0, 'pad'], ['box', 92, 85, 108, 106, 4, 18]];
+  add({ name: 'Hofteabduksjon i maskin', hi: ['legs'], front: true, fz: 22, cam: [24, 16], pr: ABDSEAT, p: [
     { h: [100, 77], t: -90, a: [86, 82], b: [114, 82], f: [94, 104], g: [106, 104] },
     { h: [100, 77], t: -90, a: [86, 82], b: [114, 82], f: [78, 104], g: [122, 104] }] });
   add({ name: 'Hofteadduksjon i maskin', like: 'Hofteabduksjon i maskin', p: [
@@ -369,9 +375,10 @@
     { h: [96, 53], t: -90, a: [98, 55], f: [96, 104], s: 0.35 },
     { h: [84, 74], t: -62, a: [78, 72], f: [96, 104], s: 0.3 },
     { h: [112, 22], t: -84, a: [130, -16], f: [114, 58], fa: 50, s: 0.3 },
-    { h: [120, 46], t: -66, a: [140, 34], f: [128, 74], s: 0.45 },
-    { h: [127, 22], t: -90, a: [128, 24], f: [128, 74], s: 0.55 },
-    { h: [112, 36], t: -88, a: [110, 38], f: [126, 74], g: [96, 100], s: 0.4 }] });
+    { h: [120, 43.6], t: -66, a: [140, 31.6], f: [128, 71.6], s: 0.45 },
+    { h: [127, 19.6], t: -90, a: [128, 21.6], f: [128, 71.6], s: 0.55 },
+    { h: [112, 33.6], t: -88, a: [110, 35.6], f: [126, 71.6], g: [96, 100], s: 0.4 },
+    { h: [104, 44], t: -88, a: [102, 46], f: [108, 64], fa: 30, g: [96, 104], s: 0.35 }] });
   add({ name: 'Sledeskyv', hi: ['legs'], cycle: true, seg: 0.32,
     pr: [['box', 134, 90, 176, 104, 0, 30, 0, 'iron'], ['rod', 136, 90, 132, 44, 1.5, 12, 'steel'], ['rod', 136, 90, 132, 44, 1.5, -12, 'steel'], ['box', 128, 104, 182, 106, 0, 34, 0, 'steel']], p: [
       { h: [96, 62], t: -38, a: [132, 46], f: [116, 96], g: [70, 104], fa: 20, ga: 30 },
@@ -431,7 +438,7 @@
   add({ name: 'Magehjul', hi: ['core'], att: [{ t: 'wheel' }], k: [1, 1], seg: 1.3, p: [
     { h: [72, 82], t: -32, a: [102, 99], f: [42, 102], fa: 180 },
     { h: [88, 96], t: -8, a: [146, 99], f: [42, 102], fa: 180 }] });
-  add({ name: 'Kabelcrunch', hi: ['core'], az: 3, k: [1, 1], pr: cableTower(140, -30), att: [{ t: 'grip', half: 3, r: 0.8, to: [140, -26] }], p: [
+  add({ name: 'Kabelcrunch', hi: ['core'], az: 7, pr: cableTower(140, -30), att: [{ t: 'cab', from: 'ab', to: [140, -26, 0], r: 0.8 }], p: [
     { h: [88, 78], t: -98, d: -90, bw: 0, a: [94, 44], f: [62, 102], fa: 180 },
     { h: [90, 76], t: -28, d: 20, bw: 9, a: [114, 70], f: [62, 102], fa: 180 }] });
   add({ name: 'Pallof press', hi: ['core'], az: 2.5, att: [{ t: 'cab', from: 'mid', to: [116, 38, -60] }], pr: [['box', 112, -6, 120, 106, -64, 8]], p: [
@@ -444,7 +451,7 @@
     pr: [['rod', 90, 94, 112, 94, 1.3, 10, 'steel'], ['rod', 90, 94, 112, 94, 1.3, -10, 'steel'], ['rod', 92, 94, 92, 106, 1.2, 10], ['rod', 110, 94, 110, 106, 1.2, 10], ['rod', 92, 94, 92, 106, 1.2, -10], ['rod', 110, 94, 110, 106, 1.2, -10]], p: [
       { h: [100, 92], t: -90, a: [101, 94], f: [152, 92], fa: -10 },
       { h: [100, 91], t: -91, a: [101, 94], f: [152, 90], fa: -10 }] });
-  add({ name: 'Koffertbæring', hi: ['core'], att: [{ t: 'kb', at: 'a' }], cycle: true, seg: 0.42, p: [
+  add({ name: 'Koffertbæring', hi: ['core'], az: 11, att: [{ t: 'kb', at: 'a' }], cycle: true, seg: 0.42, p: [
     { h: [100, 53], t: -90, a: [101, 55], b: [96, 50], f: [112, 104], g: [88, 103], fa: -10, ga: 30 },
     { h: [100, 52], t: -90, a: [101, 54], b: [102, 50], f: [100, 104], g: [104, 96], fa: 0, ga: 20 },
     { h: [100, 53], t: -90, a: [101, 55], b: [96, 50], g: [112, 104], f: [88, 103], ga: -10, fa: 30 },
@@ -461,43 +468,41 @@
     { h: [94, 53], t: -90, d: -90, a: [94, -10], b: [92, 50], f: [104, 104], g: [90, 104], ga: 0 }] });
 
   // ================= Helkropp =================
-  add({ name: 'Thrusters', hi: ['legs', 'arms'], bar: 'barbell', az: 9.5, e: [1, 1], cycle: true, p: [
-    { h: [100, 53], t: -90, a: [102, -12], f: [100, 104], s: 0.5 },
-    { h: [100, 53], t: -88, a: [104, 15], f: [100, 104], s: 0.45 },
-    { h: [80, 80], t: -70, a: [95, 44], f: [100, 104], s: 0.35 },
-    { h: [94, 60], t: -82, a: [104, 22], f: [100, 104], s: 0.25 }] });
-  var FLOOR = { h: [72, 76], t: -22, a: [104, 97], f: [100, 104] };
-  add({ name: 'Frivending', hi: ['legs', 'core'], bar: 'barbell', az: 9, e: [1, 1], cycle: true, p: [
-    o(FLOOR, { s: 0.55 }),
-    { h: [100, 49], t: -96, a: [100, 62], f: [100, 101], fa: 35, s: 0.18 },
-    { h: [94, 62], t: -80, a: [103, 24], f: [100, 104], s: 0.4 },
-    { h: [100, 53], t: -88, a: [104, 15], f: [100, 104], s: 0.7 },
-    { h: [98, 53], t: -86, a: [101, 58], f: [100, 104], s: 0.6 }] });
-  add({ name: 'Rykk', hi: ['legs', 'arms', 'core'], bar: 'barbell', az: 17, cycle: true, p: [
-    o(FLOOR, { s: 0.55 }),
-    { h: [100, 49], t: -96, a: [100, 62], f: [100, 101], fa: 35, s: 0.2 },
-    { h: [84, 78], t: -76, a: [94, 18], f: [100, 104], s: 0.5 },
-    { h: [100, 53], t: -90, a: [101, -10], f: [100, 104], s: 0.7 },
-    { h: [98, 53], t: -86, a: [101, 58], f: [100, 104], s: 0.6 }] });
-  add({ name: 'Støt', hi: ['legs', 'arms', 'core'], bar: 'barbell', az: 9, e: [1, 1], cycle: true, p: [
-    o(FLOOR, { s: 0.5 }),
-    { h: [100, 49], t: -96, a: [100, 62], f: [100, 101], fa: 35, s: 0.2 },
-    { h: [94, 62], t: -80, a: [103, 24], f: [100, 104], s: 0.45 },
-    { h: [100, 53], t: -88, a: [104, 15], f: [100, 104], s: 0.4 },
-    { h: [98, 60], t: -88, a: [103, 22], f: [100, 104], s: 0.22 },
+  // Stanga holdes foran kroppen hele veien: foran leggene, hoftene og halsen, og hodet går litt bakover når den passerer ansiktet
+  var OLY = { bar: 'barbell', az: 9, pole: [0.6, 0.7, 0.6], cycle: true };
+  var FLOOR = { h: [72, 76], t: -22, a: [106, 97], f: [100, 104] };
+  var HIPS = { h: [100, 49], t: -96, a: [107, 58], f: [100, 101], fa: 35 };
+  var CATCH = { h: [94, 62], t: -80, a: [105.6, 33.6], f: [100, 104] };
+  var RACK = { h: [100, 53], t: -88, a: [107.5, 23.2], f: [100, 104] };
+  var PASS = { h: [100, 53], t: -89, d: -102, a: [108.5, 5], f: [100, 104] };
+  var OVER = { h: [100, 53], t: -90, a: [102, -10], f: [100, 104] };
+  var HANG = { h: [98, 53], t: -88, a: [107, 58], f: [100, 104] };
+  add(o(OLY, { name: 'Thrusters', hi: ['legs', 'arms'], az: 9.5, p: [
+    o(OVER, { s: 0.45 }), o(PASS, { s: 0.2 }), o(RACK, { s: 0.3 }),
+    { h: [80, 80], t: -70, a: [96.4, 54], f: [100, 104], s: 0.35 },
+    { h: [94, 60], t: -82, a: [104.6, 31.2], f: [100, 104], s: 0.25 }, o(PASS, { s: 0.2 })] }));
+  add(o(OLY, { name: 'Frivending', hi: ['legs', 'core'], p: [
+    o(FLOOR, { s: 0.55 }), o(HIPS, { s: 0.18 }), o(CATCH, { s: 0.4 }), o(RACK, { s: 0.7 }), o(HANG, { s: 0.6 })] }));
+  add(o(OLY, { name: 'Rykk', hi: ['legs', 'arms', 'core'], az: 17, pole: [0, 1, 0.6], p: [
+    o(FLOOR, { s: 0.55 }), o(HIPS, { a: [107, 56], s: 0.2 }),
+    { h: [96, 60], t: -86, a: [108, 30], f: [100, 104], s: 0.16 },
+    { h: [84, 78], t: -76, a: [92, 18], f: [100, 104], s: 0.36 },
+    o(OVER, { a: [101, -10], s: 0.6 }), o(PASS, { a: [111, 12], s: 0.3 }), o(HANG, { s: 0.6 })] }));
+  add(o(OLY, { name: 'Støt', hi: ['legs', 'arms', 'core'], p: [
+    o(FLOOR, { s: 0.5 }), o(HIPS, { s: 0.2 }), o(CATCH, { s: 0.45 }), o(RACK, { s: 0.4 }),
+    { h: [98, 60], t: -88, a: [105.5, 30.3], f: [100, 104], s: 0.22 },
     { h: [96, 64], t: -90, a: [99, -2], f: [120, 104], g: [72, 100], ga: 30, s: 0.55 },
-    { h: [100, 53], t: -90, a: [101, -10], f: [100, 104], s: 0.6 },
-    { h: [98, 53], t: -86, a: [101, 58], f: [100, 104], s: 0.6 }] });
-  add({ name: 'Kettlebell clean and press', hi: ['arms', 'legs'], att: [{ t: 'kb', at: 'a' }], e: [1, 1], p: [
+    o(OVER, { s: 0.6 }), o(PASS, { s: 0.3 }), o(RACK, { s: 0.3 }), o(HANG, { s: 0.5 })] }));
+  add({ name: 'Kettlebell clean and press', hi: ['arms', 'legs'], az: 10, att: [{ t: 'kb', at: 'a' }], p: [
     { h: [96, 56], t: -82, a: [104, 70], b: [96, 50], f: [100, 104] },
     { h: [100, 53], t: -90, a: [107, 21], b: [96, 50], f: [100, 104] },
     { h: [100, 53], t: -90, a: [102, -10], b: [96, 50], f: [100, 104] }] });
   add({ name: 'Wall balls', hi: ['legs', 'arms'], az: 2.5, att: [{ t: 'mb' }], jump: true, p: [
-    { h: [80, 80], t: -70, a: [100, 56], f: [100, 104] },
-    { h: [100, 50], t: -90, a: [106, -12], f: [100, 102], fa: 25 }] });
+    { h: [80, 80], t: -70, a: [104, 58], f: [100, 104] },
+    { h: [100, 50], t: -90, a: [110, -8], f: [100, 102], fa: 25 }] });
   add({ name: 'Bondegange', like: 'Koffertbæring', att: [{ t: 'kb', at: 'ab' }], fx: function (q) { q.b = [101, 55]; } });
   var PL = { h: [89.9, 79.4], t: -16.3, a: [119, 101], b: [119, 101], f: [40, 95], fa: 80 };
-  add({ name: 'Man makers', hi: ['arms', 'legs', 'core'], az: 8, att: [{ t: 'db', at: 'ab' }], cycle: true, seg: 0.5, p: [
+  add({ name: 'Man makers', hi: ['arms', 'legs', 'core'], az: 10, att: [{ t: 'db', at: 'ab' }], cycle: true, seg: 0.5, p: [
     { h: [100, 53], t: -90, a: [101, 54], b: [101, 54], f: [100, 104], s: 0.4 },
     { h: [80, 84], t: -10, a: [122, 101], b: [122, 101], f: [100, 104], s: 0.3 },
     o(PL, { s: 0.35 }),
@@ -523,7 +528,7 @@
   var R1 = { h: [100, 46], t: -80, a: [104, 42], b: [104, 42], f: [96, 98], g: [112, 78], fa: 25, ga: 0 };
   var RUN = [R0, R1, swapLegs(R0), swapLegs(R1)];
   add({ name: 'Rask gange', hi: ['legs'], cycle: true, seg: 0.38, p: WALK });
-  add({ name: 'Fottur', hi: ['legs'], cycle: true, seg: 0.48, att: [{ t: 'torsopad' }], p: WALK.map(function (q) { return o(q, { t: -84 }); }) });
+  add({ name: 'Fottur', hi: ['legs'], cycle: true, seg: 0.48, az: 8.5, att: [{ t: 'torsopad' }], p: WALK.map(function (q) { return o(q, { t: -84 }); }) });
   add({ name: 'Løping', hi: ['legs'], cycle: true, seg: 0.2, p: RUN });
   add({ name: 'Intervalløping', hi: ['legs'], cycle: true, seg: 0.17, p: RUN.map(function (q) { return o(q, { t: -76 }); }) });
   add({ name: 'Sprint', hi: ['legs'], cycle: true, seg: 0.15, p: [
@@ -570,10 +575,10 @@
     ['rod', 100, 84, 90, 46, 1.4, 0, 'steel'], ['rod', 90, 46, 132, 44, 1.4, 0, 'steel'], ['rod', 132, 44, 140, 90, 1.4, 0, 'steel'],
     ['rod', 100, 84, 132, 44, 1.4, 0, 'steel'], ['box', 82, 43, 98, 46, 0, 6, 0, 'pad'], ['rod', 126, 36, 132, 44, 1.2, 0, 'steel'], ['cyl', 126, 36, 1, -8, 8, 'steel'], ['cyl', 100, 84, 3, -4, 4, 'steel']];
   function pedal(ang) { var r = ang * Math.PI / 180; return [100 + 9 * Math.cos(r), 84 + 9 * Math.sin(r)]; }
-  add({ name: 'Sykling', hi: ['legs'], cycle: true, seg: 0.22, az: 8, pr: BIKE, p: [0, 90, 180, 270].map(function (d) {
+  add({ name: 'Sykling', hi: ['legs'], cycle: true, seg: 0.22, az: 8, legZ: 6, pr: BIKE, p: [0, 90, 180, 270].map(function (d) {
     return { h: [90, 41], t: -38, d: -30, a: [126, 37], f: pedal(d), g: pedal(d + 180), fa: 10, ga: 10 };
   }) });
-  add({ name: 'Air bike', hi: ['legs', 'arms'], cycle: true, seg: 0.24,
+  add({ name: 'Air bike', hi: ['legs', 'arms'], cycle: true, seg: 0.24, legZ: 6,
     pr: [['box', 66, 102, 156, 106, 0, 30], ['rod', 90, 102, 92, 50, 2, 0, 'steel'], ['box', 82, 46, 100, 50, 0, 10, 0, 'pad'], ['rod', 100, 84, 140, 70, 2, 0, 'steel'],
       ['cyl', 142, 66, 17, -5, 5, 'iron'], ['rod', 140, 70, 150, 102, 2, 0, 'steel'], ['cyl', 100, 84, 3, -4, 4, 'steel']],
     att: [{ t: 'cab', from: 'ab', to: [120, 74], r: 1.3 }], p: [0, 90, 180, 270].map(function (d, i) {
@@ -614,15 +619,15 @@
     { h: [94, 58], t: -40, a: [96, 70], f: [100, 103], fa: 0 }] });
 
   // ================= Mobilitet =================
-  add({ name: 'Brystrygg-rotasjon', hi: ['core', 'arms'], front: true, raxA: [1, 0], rabs: true, cam: [12, 30], seg: 1.5, p: [
+  add({ name: 'Brystrygg-rotasjon', hi: ['core', 'arms'], front: true, raxA: [1, 0], rabs: true, cam: [8, 58], seg: 1.5, p: [
     { h: [100, 98], t: 180, d: 180, a: [72, 135], b: [72, 61], ra: 88, rb: 88, f: [118, 100], g: [118, 96] },
     { h: [100, 98], t: 180, d: 180, a: [72, 135], b: [72, 61], ra: 88, rb: -80, f: [118, 100], g: [118, 96] }] });
   add({ name: 'Verdens beste tøyning', hi: ['legs', 'core'], seg: 1.3, p: [
     { h: [88, 82], t: -40, d: -20, a: [118, 104], b: [114, 104], f: [122, 104], g: [52, 100], ga: 30 },
     { h: [88, 82], t: -44, d: -60, a: [118, 104], b: [111, 31], tw: 55, f: [122, 104], g: [52, 100], ga: 30 }] });
   add({ name: 'Barnets stilling', hi: ['core'], hold: true, seg: 2, k: [-1, -1], p: [
-    { h: [66, 92], t: 15, d: 20, a: [138, 102], f: [64, 103], fa: 180 },
-    { h: [64, 91], t: 11, d: 16, a: [138, 102], f: [64, 103], fa: 180 }] });
+    { h: [66, 92], t: 15, d: 2, a: [138, 102], f: [64, 103], fa: 180 },
+    { h: [64, 91], t: 11, d: 0, a: [138, 102], f: [64, 103], fa: 180 }] });
   add({ name: 'Nedovervendt hund', hi: ['legs', 'arms'], cycle: true, seg: 0.9, k: [-1, -1], p: [
     { h: [92, 59], t: 45, d: 62, a: [135, 103], f: [66, 104], g: [66, 102], fa: 0, ga: 35 },
     { h: [92, 59], t: 45, d: 62, a: [135, 103], f: [66, 102], g: [66, 104], fa: 35, ga: 0 }] });
@@ -642,9 +647,9 @@
   add({ name: 'Figur 4-strekk', hi: ['legs'], raxL: [1, 0], seg: 1.5, p: [
     o(SUP, { a: [80, 80], g: [98, 76], f: [80, 74], rf: 55, fa: -30, ga: -10 }),
     o(SUP, { a: [78, 76], g: [94, 70], f: [78, 70], rf: 55, fa: -30, ga: -10 })] });
-  add({ name: '90/90 hofte', hi: ['legs'], rax: [0, 1], rabs: true, k: [-1, -1], seg: 1.2, p: [
-    { h: [90, 100], t: -88, a: [72, 104], f: [106, 104], g: [106, 104], rf: 55, rg: 55 },
-    { h: [90, 100], t: -88, a: [72, 104], f: [106, 104], g: [106, 104], rf: -55, rg: -55 }] });
+  add({ name: '90/90 hofte', hi: ['legs'], rax: [1, 0.25], rabs: true, k: [-1, -1], seg: 1.2, p: [
+    { h: [90, 100], t: -88, a: [72, 104], f: [106, 104], g: [106, 104], rf: 78, rg: 78 },
+    { h: [90, 100], t: -88, a: [72, 104], f: [106, 104], g: [106, 104], rf: -78, rg: -78 }] });
   add({ name: 'Froskestrekk', hi: ['legs'], raxL: [1, 0], seg: 1.5, p: [
     { h: [72, 80], t: 6, d: 15, a: [106, 104], f: [46, 102], fa: 180, rf: 68 },
     { h: [62, 86], t: 12, d: 20, a: [106, 104], f: [38, 102], fa: 180, rf: 70 }] });
