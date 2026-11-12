@@ -28,8 +28,8 @@
 
   // ================= Bryst =================
   add({ name: 'Skrå benkpress', hi: ['arms'], bar: 'barbell', az: 13, faceUp: true, k: [1, 1], e: [-1, -1], pole: [-0.5, -0.6, 1], legZ: 9, cam: [34, 18], pr: inclineBench(35), p: [
-    { h: [72, 82], t: -35, d: -40, a: [97, 36], f: [48, 104], fa: -10 },
-    { h: [72, 82], t: -35, d: -40, a: [89, 61], f: [48, 104], fa: -10 }] });
+    { h: [72, 82], t: -35, d: -40, a: [97, 36], f: [48, 104], fa: 180 },
+    { h: [72, 82], t: -35, d: -40, a: [89, 61], f: [48, 104], fa: 180 }] });
   add({ name: 'Skrå manualpress', like: 'Skrå benkpress', bar: 'dumbbell', az: 11 });
   add({ name: 'Nedoverskrå benkpress', hi: ['arms'], bar: 'barbell', az: 13, faceUp: true, k: [1, 1], e: [-1, -1], pole: [-0.1, -0.8, 1], cam: [34, 18],
     pr: [['box', 54, 76.5, 104, 81.5, 0, 13, 15], ['rod', 66, 80, 66, 106, 2, 0], ['rod', 96, 86, 96, 106, 2, 0], ['cyl', 42, 88, 2.8, -9, 9, 'pad'], ['rod', 42, 88, 52, 106, 1.6, 0]],
@@ -38,11 +38,11 @@
       { h: [66, 72], t: 15, d: 10, a: [89, 75], f: [40, 86], fa: 170 }] });
   add({ name: 'Benkpress med manualer', like: 'Benkpress', bar: 'dumbbell', az: 13, fx: function (q, i) { q.a = i ? [97, 73] : [100, 48]; } });
   add({ name: 'Gulvpress', hi: ['arms'], bar: 'barbell', az: 13, faceUp: true, k: [1, 1], e: [-1, -1], pole: [-0.2, -1, 0.9], legZ: 6, cam: [34, 22], p: [
-    { h: [70, 100], t: 0, d: -8, a: [100, 70], f: [42, 104], fa: -10 },
-    { h: [70, 100], t: 0, d: -8, a: [96, 88], f: [42, 104], fa: -10 }] });
+    { h: [70, 100], t: 0, d: -8, a: [100, 70], f: [42, 104], fa: 180 },
+    { h: [70, 100], t: 0, d: -8, a: [96, 88], f: [42, 104], fa: 180 }] });
   add({ name: 'Flyes med manualer', hi: ['arms'], bar: 'dumbbell', az: 5, faceUp: true, k: [1, 1], e: [-1, -1], legZ: 11, cam: [34, 20], pr: FLATBENCH, p: [
-    { h: [70, 80], t: 0, d: -8, a: [101, 50], ra: 0, f: [50, 104], fa: -10 },
-    { h: [70, 80], t: 0, d: -8, a: [101, 52], ra: 74, f: [50, 104], fa: -10 }] });
+    { h: [70, 80], t: 0, d: -8, a: [101, 50], ra: 0, f: [50, 104], fa: 180 },
+    { h: [70, 80], t: 0, d: -8, a: [101, 52], ra: 74, f: [50, 104], fa: 180 }] });
   add({ name: 'Kabelkryss', hi: ['arms'], rax: [0, 1], az: 6, cam: [40, 14],
     pr: [['box', 84, -2, 92, 106, -40, 8], ['box', 84, -2, 92, 106, 40, 8]],
     att: [{ t: 'cab', from: 'ab', to: [88, 4], mz: 40 }, { t: 'db', at: 'ab', dir: 'y', r: 1.4 }],
@@ -75,8 +75,8 @@
       { h: [94.8, 40.5], t: -80, a: [100, 42], f: [78, 84], fa: 60 },
       { h: [93.7, 58.2], t: -70, a: [100, 42], f: [77, 101], fa: 60 }] });
   add({ name: 'Pullover med manual', hi: ['arms', 'core'], att: [{ t: 'db', at: 'a', dir: 'z' }], az: 2.5, faceUp: true, k: [1, 1], e: [-1, -1], legZ: 11, cam: [34, 20], pr: FLATBENCH, p: [
-    { h: [70, 80], t: 0, d: -8, a: [101, 50], f: [50, 104], fa: -10 },
-    { h: [70, 80], t: 0, d: -8, a: [128, 70], f: [50, 104], fa: -10 }] });
+    { h: [70, 80], t: 0, d: -8, a: [101, 50], f: [50, 104], fa: 180 },
+    { h: [70, 80], t: 0, d: -8, a: [128, 70], f: [50, 104], fa: 180 }] });
   add({ name: 'Brystpress med strikk', hi: ['arms'], az: 7, e: [-1, -1], pole: [-0.4, -0.4, 1], att: [{ t: 'cab', from: 'ab', to: [62, 30], band: true }],
     pr: [['box', 56, -10, 62, 106, 0, 10]], p: [
       { h: [100, 53], t: -88, a: [106, 34], f: [110, 104], g: [88, 104] },
@@ -229,8 +229,8 @@
     { h: [99, 53], t: -84, a: [106, 55], f: [104, 104], g: [94, 104] }] });
   add({ name: 'Triceps med strikk', like: 'Triceps pushdown', pr: [['box', 118, -30, 124, 106, 0, 10]], att: [{ t: 'cab', from: 'ab', to: [120, -24], band: true }] });
   add({ name: 'Fransk press', hi: ['arms'], az: 6, faceUp: true, k: [1, 1], e: [1, 1], pr: FLATBENCH, att: [{ t: 'grip', half: 11 }], p: [
-    { h: [70, 80], t: 0, d: -8, a: [102, 49], f: [48, 104] },
-    { h: [70, 80], t: 0, d: -8, a: [113, 70], f: [48, 104] }] });
+    { h: [70, 80], t: 0, d: -8, a: [102, 49], f: [48, 104], fa: 180 },
+    { h: [70, 80], t: 0, d: -8, a: [113, 70], f: [48, 104], fa: 180 }] });
   add({ name: 'Triceps over hodet', hi: ['arms'], az: 2, e: [-1, -1], att: [{ t: 'db', at: 'a', dir: 'y', r: 4.6 }], p: [
     { h: [100, 53], t: -90, a: [102, -8], f: [100, 104] },
     { h: [100, 53], t: -90, a: [88, 12], f: [100, 104] }] });

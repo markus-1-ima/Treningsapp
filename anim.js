@@ -142,8 +142,8 @@
     // az = hvor bredt grepet er (hendenes avstand fra midten). faceUp = ligger på ryggen med hodet mot høyre.
     { name: 'Benkpress', hi: ['arms'], bar: 'barbell', az: 13, faceUp: true, props: BENCH, box: BENCH_BOX, k: [1, 1], e: [-1, -1],
       pole: [-0.25, -0.75, 1], legZ: 11, cam: [34, 20], p: [
-      { h: [70, 80], t: 0, d: -8, a: [100, 48], f: [50, 104], fa: -10 },
-      { h: [70, 80], t: 0, d: -8, a: [95, 71], f: [50, 104], fa: -10 }] },
+      { h: [70, 80], t: 0, d: -8, a: [100, 48], f: [50, 104], fa: 180 },
+      { h: [70, 80], t: 0, d: -8, a: [95, 71], f: [50, 104], fa: 180 }] },
 
     { name: 'Knebøy med stang', hi: ['legs'], bar: 'barbell', barAt: 'back', az: 13, e: [-1, -1], p: [
       { h: [100, 53], t: -88, a: [94, 21], f: [100, 104] },

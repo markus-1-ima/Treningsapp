@@ -4,6 +4,13 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 
 ---
 
+## Torsdag 12. november 2026
+
+**Animasjoner rettet**
+- Føttene peker nå bort fra hodet i benkpress, skrå benkpress, benkpress med manualer, skrå manualpress, gulvpress, flyes med manualer, pullover med manual og fransk press, i stedet for bakover mot benken.
+
+---
+
 ## Fredag 6. november 2026
 
 **Bedre animasjoner**
