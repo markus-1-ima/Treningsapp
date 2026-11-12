@@ -24,7 +24,9 @@
       ['rod', 66, 91, 66, 106, 2, 0], ['rod', cx + 8, cy + 6, cx + 8, 106, 2, 0]];
   }
   function cableTower(x, top) { return [['box', x - 4, top, x + 4, 106, 0, 8], ['ball', x, top + 2, 2.6, 0, 'steel']]; }
-  var PULLBAR = [['cyl', 100, -22, 1.2, -30, 30, 'steel'], ['rod', 100, -22, 100, 106, 1.6, -30], ['rod', 100, -22, 100, 106, 1.6, 30]];
+  // Stang til pullups, festet med armer til to stolper bak figuren, så stolpene ikke skjuler den eller står i veien for beina
+  var PULLBAR = [['cyl', 100, -22, 1.2, -30, 30, 'steel'], ['rod', 100, -22, 76, -22, 1.4, -30], ['rod', 100, -22, 76, -22, 1.4, 30],
+    ['rod', 76, -22, 76, 106, 1.8, -30], ['rod', 76, -22, 76, 106, 1.8, 30]];
 
   // ================= Bryst =================
   add({ name: 'Skrå benkpress', hi: ['arms'], bar: 'barbell', az: 13, faceUp: true, k: [1, 1], e: [-1, -1], pole: [-0.5, -0.6, 1], legZ: 9, cam: [34, 18], pr: inclineBench(35), p: [
@@ -90,12 +92,12 @@
   // Pullups: hodet går bak stanga (stanga havner foran haka), albuene ned og ut
   var PU_DOWN = { h: [100.1, 38.8], t: -96, d: -96, a: [100, -22], f: [93, 86], fa: 70 };
   var PU_UP = { h: [97.2, 9.5], t: -100, d: -102, a: [100, -22], f: [87, 56], fa: 70 };
-  add({ name: 'Pullups', hi: ['arms'], az: 13, pole: [0.15, -1, 0.8], pr: PULLBAR, p: [PU_DOWN, PU_UP] });
+  add({ name: 'Pullups', hi: ['arms'], az: 13, pole: [0.15, -1, 0.8], cam: [20, 8], pr: PULLBAR, p: [PU_DOWN, PU_UP] });
   add({ name: 'Chinups', like: 'Pullups', az: 6.5, pole: [0.35, -1, 0.5] });
   add({ name: 'Pullups med strikk', like: 'Pullups', att: [{ t: 'cab', from: 'f', to: [100, -22, 0], band: true }] });
   add({ name: 'Negative pullups', like: 'Pullups', cycle: true, p: [o(PU_DOWN, { s: 0.6 }), o(PU_UP, { s: 2.6 })] });
   // Muscle-up: trekk høyt med hodet bak stanga, brystet over stanga, dips til strake armer
-  add({ name: 'Muscle-up', hi: ['arms', 'core'], az: 11, pole: [-0.6, -0.5, 0.7], pr: PULLBAR, seg: 0.7, p: [
+  add({ name: 'Muscle-up', hi: ['arms', 'core'], az: 11, pole: [-0.6, -0.5, 0.7], cam: [20, 8], pr: PULLBAR, seg: 0.7, p: [
     o(PU_DOWN, { s: 0.7 }),
     { h: [98.8, 7], t: -105, d: -112, a: [100, -22], f: [88, 54], fa: 70 },
     { h: [84.7, -11], t: -50, d: -40, a: [100, -22], f: [64, 30], fa: 40 },
@@ -243,7 +245,7 @@
       { h: [80, 79], t: -48, a: [114, 80], f: [108, 104] },
       { h: [80, 79], t: -48, a: [115, 74], f: [108, 104] }] });
   add({ name: 'Omvendt håndleddscurl', like: 'Håndleddscurl' });
-  add({ name: 'Dødheng', hi: ['arms'], az: 12, hold: true, seg: 1.8, pr: PULLBAR, p: [
+  add({ name: 'Dødheng', hi: ['arms'], az: 12, hold: true, seg: 1.8, cam: [20, 8], pr: PULLBAR, p: [
     { h: [102, 39], t: -93, d: -92, a: [100, -22], f: [99, 90], fa: 70 },
     { h: [101, 39], t: -91, d: -88, a: [100, -22], f: [97, 90], fa: 70 }] });
 
@@ -402,13 +404,13 @@
   add({ name: 'Liggende beinhev', hi: ['core'], p: [
     o(SUP, { a: [90, 104], f: [122, 99], fa: -80 }),
     o(SUP, { a: [90, 104], f: [76, 50], fa: -170 })] });
-  add({ name: 'Hengende kneløft', hi: ['core'], az: 11, pr: PULLBAR, p: [
+  add({ name: 'Hengende kneløft', hi: ['core'], az: 11, cam: [20, 8], pr: PULLBAR, p: [
     { h: [101, 39], t: -92, d: -92, a: [100, -22], f: [100, 90], fa: 70 },
     { h: [102, 38], t: -96, d: -94, a: [100, -22], f: [112, 54], fa: 60 }] });
-  add({ name: 'Hengende beinhev', hi: ['core'], az: 11, pr: PULLBAR, p: [
+  add({ name: 'Hengende beinhev', hi: ['core'], az: 11, cam: [20, 8], pr: PULLBAR, p: [
     { h: [101, 39], t: -92, d: -92, a: [100, -22], f: [100, 90], fa: 70 },
     { h: [100, 38], t: -100, d: -96, a: [100, -22], f: [151, 32], fa: -20 }] });
-  add({ name: 'Toes to bar', hi: ['core'], az: 11, pr: PULLBAR, p: [
+  add({ name: 'Toes to bar', hi: ['core'], az: 11, cam: [20, 8], pr: PULLBAR, p: [
     { h: [101, 39], t: -92, d: -92, a: [100, -22], f: [100, 90], fa: 70 },
     { h: [108, 22], t: -116, d: -110, a: [100, -22], f: [110, -16], fa: -60 }] });
   add({ name: 'Russian twist', hi: ['core'], az: 2.5, att: [{ t: 'mb' }], k: [-1, -1], seg: 0.7, p: [

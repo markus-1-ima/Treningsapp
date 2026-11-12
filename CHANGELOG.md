@@ -12,6 +12,7 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 - Omvendt roing: albuene peker nå ned mot gulvet og bakover mot føttene når du trekker deg opp, i stedet for opp over stanga.
 - Pullups, chinups, pullups med strikk og negative pullups: hodet går bak stanga og haka kommer over den, i stedet for at hodet går gjennom stanga. Albuene går ned og ut til siden.
 - Muscle-up: trekker seg høyt med hodet bak stanga, får brystet over stanga og dipser opp til strake armer, med albuene bakover.
+- Stanga til pullups, dødheng og hengende mageøvelser står nå på stolper bak figuren, og kameraet ser mer fra siden, så stolpene ikke skjuler figuren eller står i veien for beina.
 
 ---
 
