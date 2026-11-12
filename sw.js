@@ -1,7 +1,7 @@
 /* Service worker: gjør at Treningsbok kan installeres og virker uten nett.
  * Appens egne filer hentes fra nettet først (så oppdateringer kommer med en gang),
  * og den lagrede kopien brukes bare når du er frakoblet. */
-var CACHE = 'treningsbok-v7';
+var CACHE = 'treningsbok-v8';
 var CORE = ['./', 'index.html', 'style.css', 'app.js', 'anim-ovelser.js', 'anim.js', 'mer.js', 'ovelser-data.js', 'ovelser.js', 'firebase-config.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-64.png'];
 

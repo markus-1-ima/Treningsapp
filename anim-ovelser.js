@@ -87,19 +87,19 @@
     pr: [['box', 92, 83, 116, 106, 19.5, 6, 0, 'wood'], ['box', 92, 83, 116, 106, -19.5, 6, 0, 'wood']], p: [
       { h: [84, 64], t: -45, a: [104, 74], f: [100, 104] },
       { h: [96, 53], t: -88, a: [99, 90], f: [100, 104] }] });
-  add({ name: 'Pullups', hi: ['arms'], az: 13, e: [-1, -1], pr: PULLBAR, p: [
-    { h: [102.6, 38.9], t: -95, d: -95, a: [100, -22], f: [94, 86], fa: 70 },
-    { h: [100.6, 16], t: -95, d: -92, a: [100, -22], f: [92, 63], fa: 70 }] });
-  add({ name: 'Chinups', like: 'Pullups', az: 6.5 });
+  // Pullups: hodet går bak stanga (stanga havner foran haka), albuene ned og ut
+  var PU_DOWN = { h: [100.1, 38.8], t: -96, d: -96, a: [100, -22], f: [93, 86], fa: 70 };
+  var PU_UP = { h: [97.2, 9.5], t: -100, d: -102, a: [100, -22], f: [87, 56], fa: 70 };
+  add({ name: 'Pullups', hi: ['arms'], az: 13, pole: [0.15, -1, 0.8], pr: PULLBAR, p: [PU_DOWN, PU_UP] });
+  add({ name: 'Chinups', like: 'Pullups', az: 6.5, pole: [0.35, -1, 0.5] });
   add({ name: 'Pullups med strikk', like: 'Pullups', att: [{ t: 'cab', from: 'f', to: [100, -22, 0], band: true }] });
-  add({ name: 'Negative pullups', like: 'Pullups', cycle: true, fx: function (q, i) { q.s = i === 0 ? 0.6 : 2.6; }, p: [
-    { h: [102.6, 38.9], t: -95, d: -95, a: [100, -22], f: [94, 86], fa: 70 },
-    { h: [100.6, 16], t: -95, d: -92, a: [100, -22], f: [92, 63], fa: 70 }] });
-  add({ name: 'Muscle-up', hi: ['arms', 'core'], az: 11, e: [-1, -1], pr: PULLBAR, seg: 0.8, p: [
-    { h: [102.6, 38.9], t: -95, d: -95, a: [100, -22], f: [94, 86], fa: 70 },
-    { h: [97, 12], t: -84, d: -80, a: [100, -22], f: [88, 60], fa: 70 },
-    { h: [96, -4], t: -62, d: -40, a: [100, -22], f: [80, 42], fa: 60 },
-    { h: [98, -24], t: -88, d: -88, a: [100, -22], f: [96, 22], fa: 70 }] });
+  add({ name: 'Negative pullups', like: 'Pullups', cycle: true, p: [o(PU_DOWN, { s: 0.6 }), o(PU_UP, { s: 2.6 })] });
+  // Muscle-up: trekk høyt med hodet bak stanga, brystet over stanga, dips til strake armer
+  add({ name: 'Muscle-up', hi: ['arms', 'core'], az: 11, pole: [-0.6, -0.5, 0.7], pr: PULLBAR, seg: 0.7, p: [
+    o(PU_DOWN, { s: 0.7 }),
+    { h: [98.8, 7], t: -105, d: -112, a: [100, -22], f: [88, 54], fa: 70 },
+    { h: [84.7, -11], t: -50, d: -40, a: [100, -22], f: [64, 30], fa: 40 },
+    { h: [93, -22], t: -80, d: -82, a: [100, -22], f: [94, 30], fa: 70 }] });
   add({ name: 'Smalt nedtrekk', like: 'Nedtrekk', bar: '', cable: false, az: 3, att: [{ t: 'grip', half: 5, to: [100, -30] }] });
   add({ name: 'Rett-arm-nedtrekk', hi: ['arms', 'core'], az: 9, pr: cableTower(146, -26), att: [{ t: 'grip', half: 9, to: [146, -22] }], p: [
     { h: [96, 54], t: -70, a: [131, 8], f: [104, 104], g: [92, 104] },

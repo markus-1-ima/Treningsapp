@@ -10,6 +10,8 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 - Føttene peker nå bort fra hodet i benkpress, skrå benkpress, benkpress med manualer, skrå manualpress, gulvpress, flyes med manualer, pullover med manual og fransk press, i stedet for bakover mot benken.
 - Sittende kabelroing: knærne bøyer seg nå oppover med føttene mot fotplata, i stedet for å knekke ned mot skinnen.
 - Omvendt roing: albuene peker nå ned mot gulvet og bakover mot føttene når du trekker deg opp, i stedet for opp over stanga.
+- Pullups, chinups, pullups med strikk og negative pullups: hodet går bak stanga og haka kommer over den, i stedet for at hodet går gjennom stanga. Albuene går ned og ut til siden.
+- Muscle-up: trekker seg høyt med hodet bak stanga, får brystet over stanga og dipser opp til strake armer, med albuene bakover.
 
 ---
 
