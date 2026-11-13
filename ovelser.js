@@ -105,7 +105,13 @@
     function addBox(e) {
       var progs = TB.state().programs;
       var inP = progs.filter(function (p) { return p.exercises.some(function (x) { return key(x.name) === e.k; }); });
-      var h = '<div class="exadd">';
+      var h = '<div class="exadd">', cur = TB.sess();
+      // Er en økt i gang, kan øvelsen legges rett inn i den
+      if (cur) {
+        var has = cur.rows.some(function (r) { return key(r.name) === e.k; });
+        h += has ? '<p class="sub">✓ Er med i økta som er i gang (' + esc(cur.name) + ')</p>'
+                 : '<div class="row-actions"><button class="btn btn-primary" data-act="ex-sess" data-n="' + esc(e.name) + '">Legg til i økta som er i gang</button></div>';
+      }
       if (inP.length) h += '<p class="sub">✓ Finnes i ' + inP.map(function (p) { return '«' + esc(p.name) + '»'; }).join(', ') + '</p>';
       if (progs.length) {
         var free = progs.filter(function (p) { return inP.indexOf(p) < 0; });
@@ -212,6 +218,11 @@
       p.exercises.push(entryFor(e));
       addMsg = 'Lagt til i «' + p.name + '». Endre sett og repetisjoner under Programmer.';
       TB.save(); refreshList();
+    });
+    TB.action('ex-sess', function (t) {
+      var err = TB.sessAdd(t.dataset.n);
+      addMsg = err || 'Lagt til i økta. Du finner den nederst under Økt.';
+      refreshList();
     });
     TB.action('ex-new', function (t) {
       var e = lookup(t.dataset.n), st = TB.state();

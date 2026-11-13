@@ -24,7 +24,7 @@
       ['kropp', 'Kropp', st.body.length ? 'Siste måling: ' + fmtNum(st.body[0].kg) + ' kg' : 'Følg vekt og midjemål over tid'],
       ['verktoy', 'Verktøy', 'Skivekalkulator, maks-kalkulator og stoppeklokke'],
       ['merker', 'Merker', badgeCount(st) + ' av ' + BADGES.length + ' merker tatt'],
-      ['innstillinger', 'Innstillinger', 'Lyd, vibrasjon, hviletid, stang og skiver'],
+      ['innstillinger', 'Innstillinger', 'Lyd, vibrasjon, skjerm, hviletid, stang og skiver'],
       ['data', 'Data og sikkerhetskopi', 'Last ned, gjenopprett eller slett dataene dine']
     ];
     var h = '<div class="sec-head"><div><h2>Mer</h2><p class="sub">Verktøy, merker og innstillinger.</p></div></div>';
@@ -283,7 +283,8 @@
     var h = head('Innstillinger', 'Lagres sammen med resten av dataene dine.');
     h += '<section class="panel setlist"><label class="setrow2" for="set-name"><div><b>Navnet ditt</b><p class="sub">Brukes i hilsenen på I dag-kortet.</p></div><input id="set-name" class="inp" maxlength="30" data-f="set-name" value="' + esc(s.name) + '" placeholder="Valgfritt"></label>' +
       sw2('sound', 'Lyd', 'Pip fra hviletimer, intervalltimer og tidtaker.') +
-      sw2('vibrate', 'Vibrasjon', 'Vibrerer ved bytte i intervalltimeren (på mobil).') + '</section>';
+      sw2('vibrate', 'Vibrasjon', 'Vibrerer ved bytte i intervalltimeren og når hvilen er over (på mobil).') +
+      sw2('awake', 'Hold skjermen på', 'Skjermen slukker ikke mens en økt er åpen. Bruker litt mer batteri.') + '</section>';
     h += '<section class="panel setlist">' +
       '<div class="setrow2 col"><div><b>Standard hviletid</b><p class="sub">Starter automatisk når du krysser av et sett i styrkeøkter.</p></div><div class="chips">' +
       [60, 90, 120, 180].map(function (v) { return '<button class="chip" data-act="set-rest" data-v="' + v + '" aria-pressed="' + (st.rest === v) + '">' + TB.clock(v) + '</button>'; }).join('') + '</div></div>' +

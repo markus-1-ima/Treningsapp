@@ -4,6 +4,51 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 
 ---
 
+## Fredag 13. november 2026
+
+**Økta**
+- Økt-fanen åpner nå med programmene dine. Det som er planlagt i dag står øverst, og hvert program viser når du sist gjorde det. Intervalltimeren ligger rett under.
+- Ny «Fri økt»: start uten program og legg til øvelser underveis. Etterpå kan du lagre den som et program.
+- I en økt kan du legge til en øvelse, fjerne det siste settet eller hoppe over en øvelse.
+- Holdøvelser som planke får sekunder og egen tidtaker også i styrkeprogrammer, og kondisjonsøvelser som løping får minutter. Appen kjenner igjen øvelsene fra øvelsesbanken.
+- Hvert sett fylles inn fra samme sett forrige gang. Klarte du færre repetisjoner enn planen sist, står planen der som mål. Endrer du tallene i programmet, er det de som gjelder i neste økt.
+- «Vis hvordan» viser også forklaringen og tipset fra øvelsesbanken, ikke bare animasjonen.
+- En stripe øverst viser hvor langt du har kommet i økta, og Økt-fanen får en prikk når noe er i gang.
+- Tallfeltene markeres når du trykker i dem, så du kan skrive et nytt tall rett over det gamle.
+- Etter økta får du en oppsummering med tid, sett, løftet vekt, nye rekorder og sammenligning med forrige gang.
+- Rettet: Knappene på hviletimeren (1:00, 1:30, 2:00 og Stopp) lå skjult bak menyen på mobil. Nå ligger hviletimeren over menyen, og telefonen vibrerer når hvilen er over.
+- Rettet: «Fortsett» i ukeplanen startet økta på nytt og fjernet det du hadde krysset av.
+- Rettet: En økt som ble stående åpen, for eksempel til dagen etter, ble ført med mange timers varighet. Nå regnes tiden fram til siste sett, og økta føres på dagen den startet.
+
+**Programmer**
+- Programmene vises som korte kort med øvelsene og en Start-knapp. Trykk «Rediger» for å åpne et program.
+- På mobil får øvelsesnavnet en egen linje, så hele navnet vises.
+- Øvelser kan flyttes opp og ned med piler.
+- «Kopier program» lager en kopi du kan endre.
+- «Del» lager en lenke til programmet som du kan sende til en venn. Vennen åpner lenken og kan legge programmet til hos seg.
+- Nye programmer havner øverst og åpnes klare til å redigeres.
+
+**Fremgang**
+- En logget økt kan flyttes til en annen dag: åpne økta i historikken og endre datoen.
+- «Vis flere» i historikken og «Vis alle» under rekorder.
+- Ny linje med totalt antall økter, tid og løftet vekt.
+- Lista under diagrammet for en øvelse er blitt mer kompakt.
+
+**Øvelser**
+- Er en økt i gang, kan du legge en øvelse rett inn i den fra øvelsesbanken.
+
+**Innstillinger og innlogging**
+- Ny innstilling «Hold skjermen på» mens en økt er åpen. Skjermen holdes uansett på mens en hold-tidtaker går.
+- «Vis»-knapp i passordfeltet når du logger inn.
+- Holder du inne på app-ikonet på mobilen, får du snarveier til Økt, Uke og Fremgang.
+
+**Generelt**
+- Når du bytter fane, starter siden øverst.
+- Tastatur og skjermleser beholder plassen sin når siden oppdateres, og nettleserfanen heter det samme som siden du er på.
+- Appen tåler ødelagte data bedre. Går noe likevel galt, får du en melding med «Last appen på nytt» i stedet for en blank side.
+- «I dag» oppdateres når du åpner appen igjen etter midnatt.
+- Rettet: Intervalløkter kunne korte ned historikken til 400 økter.
+
 ## Torsdag 12. november 2026
 
 **Animasjoner rettet**

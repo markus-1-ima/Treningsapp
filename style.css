@@ -616,3 +616,84 @@ a.btn { text-decoration: none; }
 @media (prefers-reduced-motion: reduce) { .exhead .chev { transition: none; } }
 .anim .at { stroke: var(--muted); stroke-width: 2px; fill: none; }
 .anim .at.solid { fill: var(--muted); stroke: none; opacity: .7; }
+
+/* ---------- Økt: fremdrift, forklaring og øvelser underveis ---------- */
+.sess-bar { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.sess-bar i { display: block; height: 100%; background: var(--ok); border-radius: 999px; transition: width .25s ease; }
+.pick.is-planned { border-color: var(--accent); }
+.exhelp { display: grid; gap: 12px; }
+.exhelp-tx { display: grid; gap: 10px; align-content: start; }
+@media (min-width: 700px) { .exhelp { grid-template-columns: minmax(0, 360px) minmax(0, 1fr); align-items: start; } }
+.addex { display: flex; flex-direction: column; gap: 8px; }
+.addex label { font-weight: 600; }
+.addex-row { display: flex; gap: 8px; }
+.addex-row .inp { flex: 1 1 auto; }
+.addex .msg:empty { display: none; }
+.nav a { position: relative; }
+.nav a.live::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none; }
+@media (max-width: 759px) {
+  .nav a.live::after { position: absolute; top: 4px; left: calc(50% + 7px); box-shadow: 0 0 0 2px var(--surface); }
+  .nav a[aria-current="page"].live::after { box-shadow: 0 0 0 2px var(--accent-soft); }
+}
+
+/* ---------- Programmer: sammenlagte kort og rader som får plass på mobil ---------- */
+.progsum { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.progsum-main { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.progsum .pn { font-weight: 600; font-size: 19px; overflow-wrap: anywhere; }
+.progex { font-size: 14px; overflow-wrap: anywhere; }
+.prog.is-open { border-color: var(--accent); }
+.progdone { margin-left: auto; }
+.exrow, .exlab { grid-template-columns: minmax(0, 1fr) 64px 84px 76px 108px; }
+.exrow.nokg, .exlab.nokg { grid-template-columns: minmax(0, 1fr) 64px 84px 108px; }
+.exr1, .exr2 { display: contents; }
+.exbtns { display: flex; order: 9; }
+.exbtns .icon-btn { width: 36px; }
+.exbtns .icon-btn[data-act^="ex-"]:hover { color: var(--ink); }
+.icon-btn[disabled] { opacity: .35; cursor: default; border-color: transparent; }
+.exf { position: relative; display: block; min-width: 0; }
+.exf > span { display: none; }
+.exf.diff > span { display: block; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 600; color: var(--muted); pointer-events: none; }
+.exf.diff .inp { padding-right: 34px; -moz-appearance: textfield; appearance: textfield; }
+.exf.diff .inp::-webkit-inner-spin-button, .exf.diff .inp::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+@media (max-width: 520px) {
+  .exlab { display: none; }
+  .exrow, .exrow.nokg { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .exr1 { display: flex; gap: 2px; align-items: center; }
+  .exr1 .exn { flex: 1 1 auto; padding: 0 10px; font-weight: 600; }
+  .exr2 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .exf, .exf.diff { display: flex; align-items: center; gap: 6px; }
+  .exf > span, .exf.diff > span { display: block; position: static; transform: none; flex: none; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .exf.diff .inp { padding-right: 6px; }
+  .exf.nofield { display: none; }
+}
+
+/* ---------- Oppsummering, lengre lister, feilside og innlogging ---------- */
+.cel-main { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.cel-line { font-size: 17px; }
+.cel-pr { margin-top: 6px; }
+.more { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.errbox { display: flex; flex-direction: column; gap: 10px; }
+.passwrap { position: relative; }
+.passwrap .inp { padding-right: 64px; }
+.passwrap .linkbtn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); padding: 6px 4px; }
+.addex-row .btn { flex: none; white-space: nowrap; }
+.pick { flex-wrap: nowrap; }
+.pick > div { flex: 1 1 0; min-width: 0; }
+.pick > .btn { flex: none; white-space: nowrap; }
+.hedit { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.hedit label { font-size: 13px; font-weight: 600; color: var(--muted); }
+.hedit .inp { width: auto; min-height: 36px; }
+.sharebox { display: grid; gap: 6px; }
+.sharebox .msg { margin: 0; }
+.exrecent { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.exrecent .hx span:first-child { font-weight: 400; color: var(--muted); white-space: nowrap; }
+.exrecent .hx span:last-child { text-align: right; }
+
+/* Hviletimeren på mobil ligger over menyen nederst, ikke bak den */
+@media (max-width: 759px) {
+  #restbar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); padding-top: 8px; padding-bottom: 8px; }
+  .rest-in { gap: 6px 10px; }
+  .rest-time { font-size: 30px; }
+  .rest-chips .chip { min-height: 36px; padding: 0 10px; }
+}
+.totline { margin: -4px 2px 0; }
