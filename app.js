@@ -164,13 +164,37 @@
     if (saving) { again = true; return; }
     saving = true;
     var at = changes, r = ref;
-    r.set(JSON.parse(JSON.stringify(state))).then(function () {
+    cloudSet(r).then(function () {
       if (r !== ref) return;
       if (changes === at) { setDirty(false); setSync('saved'); }
-    }, function () { setSync(navigator.onLine === false ? 'offline' : 'error'); }).then(function () {
+    }, function () { if (r === ref) setSync(navigator.onLine === false ? 'offline' : 'error'); }).then(function () {
       saving = false;
       if (again) { again = false; flush(); }
     });
+  }
+  // Firestore godtar ikke lister rett inni lister (ukeplanen er [[id], [], …] og settene i loggen er [[kg, reps], …]).
+  // Før lagring pakkes hver indre liste inn i et objekt { _l: [...] }, og ved henting pakkes den ut igjen.
+  // Data uten slike objekter (lagret av eldre versjoner) leses som før.
+  function toCloud(v) {
+    if (Array.isArray(v)) return v.map(function (x) { var y = toCloud(x); return Array.isArray(y) ? { _l: y } : y; });
+    if (v && typeof v === 'object') { var o = {}; Object.keys(v).forEach(function (k) { if (v[k] !== undefined) o[k] = toCloud(v[k]); }); return o; }
+    return v;
+  }
+  function fromCloud(v) {
+    if (Array.isArray(v)) return v.map(fromCloud);
+    if (v && typeof v === 'object') {
+      var ks = Object.keys(v);
+      if (ks.length === 1 && ks[0] === '_l' && Array.isArray(v._l)) return v._l.map(fromCloud);
+      var o = {}; ks.forEach(function (k) { o[k] = fromCloud(v[k]); }); return o;
+    }
+    return v;
+  }
+  function cloudData() { return toCloud(JSON.parse(JSON.stringify(state))); }
+  function readCloud(snap) { return normalize(fromCloud(JSON.parse(JSON.stringify(snap.data())))); }
+  // Lagrer til skyen. Feiler det med en gang (ugyldige data), blir det et avvist løfte i stedet for at appen henger på «Lagrer …».
+  function cloudSet(r) {
+    try { return Promise.resolve(r.set(cloudData())); }
+    catch (e) { if (window.console) console.error(e); return Promise.reject(e); }
   }
   // Send endringene med en gang appen legges bort eller lukkes, ikke først etter ventetiden
   function flushNow() { if (saveT) flush(); }
@@ -1688,7 +1712,7 @@
       // Lagre det som ikke er lagret ennå før du logges ut (vent høyst fem sekunder)
       btn.disabled = true; setSync('saving');
       var fin = false, once = function () { if (!fin) { fin = true; done(); } };
-      ref.set(JSON.parse(JSON.stringify(state))).then(once, once);
+      cloudSet(ref).then(once, once);
       setTimeout(once, 5000);
     });
     auth.onAuthStateChanged(function (u) { if (u) signedIn(u); else signedOut(); });
@@ -1713,7 +1737,7 @@
       if (foreign) { sess = null; saveDraft(); }
       owner = u.uid;
       if (snap.exists) {
-        var remote = normalize(JSON.parse(JSON.stringify(snap.data())));
+        var remote = readCloud(snap);
         state = unsynced ? mergeStates(remote, state) : remote;
       } else if (foreign) state = normalize(defaults());
       // ellers: ny konto uten skydata, så dataene fra denne enheten tas med
@@ -1781,7 +1805,7 @@
       merging = false;
       if (r !== ref) return;
       needMerge = false;
-      if (snap.exists) { state = mergeStates(normalize(JSON.parse(JSON.stringify(snap.data()))), state); render(); }
+      if (snap.exists) { state = mergeStates(readCloud(snap), state); render(); }
       save(); flush();
     }, function () { merging = false; setSync('offline'); });
   }
@@ -1814,7 +1838,7 @@
         return docRef.get().then(function (snap) {
           ref = docRef;
           if (snap.exists && !touched) {
-            state = normalize(JSON.parse(JSON.stringify(snap.data())));
+            state = readCloud(snap);
             try { localStorage.setItem('tb_state', JSON.stringify(state)); } catch (e) { }
             render();
             setSync('saved');

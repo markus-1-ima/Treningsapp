@@ -4,6 +4,13 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 
 ---
 
+## Tirsdag 17. november 2026
+
+**Lagring til kontoen rettet**
+- Rettet en alvorlig feil: Etter at ukeplanen fikk plass til flere økter per dag, ble ingenting lagret på kontoen. Det sto «Lagrer …» hele tiden, og dataene fantes bare på enheten. De ble ikke synket mellom mobil og PC, og kunne forsvinne ved utlogging. Nå lagres alt på kontoen igjen, og det du har gjort på enheten i mellomtiden blir sendt opp neste gang appen åpnes med nett.
+- Data som ble lagret på kontoen før feilen, leses som før.
+- Hvis lagringen feiler, står det nå «Kunne ikke lagre» i stedet for at appen blir hengende på «Lagrer …», og den prøver igjen når du åpner appen på nytt.
+
 ## Fredag 13. november 2026
 
 **Økta**
