@@ -701,3 +701,7 @@ a.btn { text-decoration: none; }
 /* Er det ikke plass til navnet, tema og «Logg ut» på én linje, flyttes knappene ned under navnet */
 .top { flex-wrap: wrap; row-gap: 10px; }
 .top-right { margin-left: auto; }
+/* Kviletimeren før første sett: ingen nedtelling, og Stopp skjules */
+#restbar.idle .rest-time { font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+#restbar.idle [data-act="rest-stop"] { display: none; }
+.finwarn { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--accent-soft); color: var(--ink); font-size: 15px; }

@@ -11,6 +11,11 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 - Data som ble lagret på kontoen før feilen, leses som før.
 - Hvis lagringen feiler, står det nå «Kunne ikke lagre» i stedet for at appen blir hengende på «Lagrer …», og den prøver igjen når du åpner appen på nytt.
 
+**Økta**
+- Trykker du «Fullfør økt» før alle settene er krysset av, får du beskjed om hvor mange som mangler og at de ikke blir lagret. Trykk «Fullfør likevel» for å avslutte.
+- Hviletimeren står ikke lenger på 1:30 før du har tatt første sett. Den viser «Starter når du krysser av et sett», og Stopp vises først når hvilen går.
+- Skjermlesere sier nå navnet på øvelsen, hvilket sett det er, og om settet er gjort, for eksempel «Benkpress, sett 1 av 3, ikke gjort». Det gjelder også kilo- og repsfeltene og tidtakeren.
+
 **Småfeil**
 - Fremgang: Dagnavnene ved treningskalenderen sto én rad for høyt, så «Ons» sto ved tirsdag. Nå står de ved riktig dag.
 - Mobil: «Logg ut» ble delt på to linjer, og navnet på appen ble kuttet. Er det for trangt, flyttes knappene nå ned under navnet.

@@ -487,12 +487,13 @@
       }
       out += '<div class="fieldlab' + nk + '"><span>Sett</span>' + (kg ? '<span>Kg</span>' : '') + '<span>' + K.unit + '</span>' + (timed ? '<span></span>' : '') + '<span></span></div>';
       r.sets.forEach(function (s, si) {
+        var sl = esc(r.name) + ', sett ' + (si + 1) + ' av ' + r.sets.length;     // det skjermleseren sier om feltene og knappene i settet
         out += '<div class="setrow' + nk + '"><span class="n">' + (si + 1) + '</span>' +
-          (kg ? '<input class="inp" type="number" inputmode="decimal" step="0.5" min="0" data-f="sk" data-r="' + ri + '" data-s="' + si + '" value="' + esc(s.kg) + '" aria-label="Kilo, sett ' + (si + 1) + '">' : '') +
-          '<input class="inp" type="number" inputmode="decimal" min="0" data-f="sr" data-r="' + ri + '" data-s="' + si + '" value="' + esc(s.reps) + '" aria-label="' + K.unit + ', sett ' + (si + 1) + '">' +
-          (timed ? '<button class="holdbtn' + (hold && hold.r === ri && hold.s === si ? ' running' : '') + '" id="hold-' + ri + '-' + si + '" data-act="hold" data-r="' + ri + '" data-s="' + si + '" aria-label="' + (hold && hold.r === ri && hold.s === si ? 'Stopp tidtakeren' : 'Start tidtaker for sett ' + (si + 1)) + '">' +
+          (kg ? '<input class="inp" type="number" inputmode="decimal" step="0.5" min="0" data-f="sk" data-r="' + ri + '" data-s="' + si + '" value="' + esc(s.kg) + '" aria-label="' + sl + ', kilo">' : '') +
+          '<input class="inp" type="number" inputmode="decimal" min="0" data-f="sr" data-r="' + ri + '" data-s="' + si + '" value="' + esc(s.reps) + '" aria-label="' + sl + ', ' + K.unit.toLowerCase() + '">' +
+          (timed ? '<button class="holdbtn' + (hold && hold.r === ri && hold.s === si ? ' running' : '') + '" id="hold-' + ri + '-' + si + '" data-act="hold" data-r="' + ri + '" data-s="' + si + '" aria-label="' + (hold && hold.r === ri && hold.s === si ? 'Stopp tidtakeren' : 'Start tidtaker for ' + sl) + '">' +
             (hold && hold.r === ri && hold.s === si ? Math.max(0, Math.ceil((hold.end - Date.now()) / 1000)) : PLAY) + '</button>' : '') +
-          '<button class="check' + (s.done ? ' done' : '') + '" data-act="setdone" data-r="' + ri + '" data-s="' + si + '" aria-pressed="' + (s.done ? 'true' : 'false') + '" aria-label="Sett ' + (si + 1) + ' fullført">' + CHECK + '</button></div>';
+          '<button class="check' + (s.done ? ' done' : '') + '" data-act="setdone" data-r="' + ri + '" data-s="' + si + '" aria-pressed="' + (s.done ? 'true' : 'false') + '" aria-label="' + sl + (s.done ? ', fullført' : ', ikke gjort') + '">' + CHECK + '</button></div>';
         if (s.done && beatsRecord(r, s)) out += '<div class="pr-new"><span class="prtag">Ny rekord</span> ' + esc(prText(setRec(kind, s))) + '</div>';
       });
       var lastSet = r.sets[r.sets.length - 1], anyDone = r.sets.some(function (x) { return x.done; }), rmKey = 'rmrow' + ri;
@@ -505,7 +506,9 @@
     out += '<section class="panel rateset" aria-labelledby="rate-h"><h3 id="rate-h">Hvordan gikk økta?</h3><div class="chips" role="group" aria-label="Hvor tung var økta">' +
       RATE.map(function (t, i) { return '<button class="chip" data-act="rate" data-k="' + (i + 1) + '" aria-pressed="' + (sess.rate === i + 1) + '">' + t + '</button>'; }).join('') + '</div>' +
       '<label class="sr" for="sess-note">Notat</label><textarea id="sess-note" class="inp note" data-f="snote" rows="2" maxlength="500" placeholder="Notat (valgfritt), for eksempel hvordan kroppen kjentes">' + esc(sess.note || '') + '</textarea></section>';
-    out += '<div class="sess-foot"><button class="btn btn-primary" data-act="finish">Fullfør økt</button><button class="btn btn-ghost' + (armed === 'cancel' ? ' btn-danger' : '') + '" data-act="cancel">' + (armed === 'cancel' ? 'Forkast økta?' : 'Avbryt økt') + '</button><span class="msg" id="sess-msg" role="alert"></span></div>';
+    var left = cnt.t - cnt.d, warn = armed === 'finish' && left > 0;
+    if (warn) out += '<p class="finwarn" role="alert">' + left + ' av ' + cnt.t + ' sett er ikke krysset av. De blir ikke lagret. Trykk «Fullfør likevel» for å avslutte, eller kryss av settene du har gjort.</p>';
+    out += '<div class="sess-foot"><button class="btn btn-primary" data-act="finish">' + (warn ? 'Fullfør likevel' : 'Fullfør økt') + '</button><button class="btn btn-ghost' + (armed === 'cancel' ? ' btn-danger' : '') + '" data-act="cancel">' + (armed === 'cancel' ? 'Forkast økta?' : 'Avbryt økt') + '</button><span class="msg" id="sess-msg" role="alert"></span></div>';
     return out;
   }
 
@@ -971,8 +974,9 @@
         bar.classList.add('ready'); el.textContent = 'Klar';
       } else { bar.classList.remove('ready'); el.textContent = fmtTime(left); }
     } else if (!bar.classList.contains('ready')) {
-      el.textContent = fmtTime(state.rest);
+      el.textContent = 'Starter når du krysser av et sett';          // ingen nedtelling før første sett
     }
+    bar.classList.toggle('idle', !restEnd && !bar.classList.contains('ready'));
   }
   function startRest(sec) {
     ensureAudio();
@@ -1053,6 +1057,10 @@
       if (best && kind === 'styrke') last[r.name] = { kg: num(best.kg), reps: num(best.reps) };
     });
     if (!done) { var m = $('#sess-msg'); if (m) m.textContent = 'Merk av minst ett sett først.'; return; }
+    // Er ikke alle settene krysset av, må du trykke en gang til. Settene som ikke er krysset av, lagres ikke.
+    var cnt = sessCount();
+    if (cnt.d < cnt.t && armed !== 'finish') { armed = 'finish'; render(); var fw = $('.finwarn'); if (fw && fw.scrollIntoView) fw.scrollIntoView({ block: 'center' }); return; }
+    armed = '';
     // Ble økta stående åpen lenge etter siste sett, regnes tiden fram til det settet
     var end = (sess.act && now - sess.act > 45 * 60000) ? sess.act + 60000 : now;
     var mins = Math.max(1, Math.round((end - sess.start) / 60000));
@@ -1323,7 +1331,7 @@
     var t = e.target.closest('[data-act]');
     if (!t) return;
     var a = t.dataset.act, p, ex;
-    var keep = (a === 'del-prog' || a === 'del-log' || a === 'cancel' || a === 'iv-stop' || a === 'plan-del' || a === 'rmrow' || !!EXT.keep[a]);
+    var keep = (a === 'del-prog' || a === 'del-log' || a === 'cancel' || a === 'iv-stop' || a === 'plan-del' || a === 'rmrow' || a === 'finish' || !!EXT.keep[a]);
     if (!keep && armed) armed = '';
     switch (a) {
       case 'wk-prev': weekOffset--; render(); break;
