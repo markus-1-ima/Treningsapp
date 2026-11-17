@@ -11,6 +11,10 @@ Hva som er bygd og endret i appen, dag for dag. Nyeste dag står øverst.
 - Data som ble lagret på kontoen før feilen, leses som før.
 - Hvis lagringen feiler, står det nå «Kunne ikke lagre» i stedet for at appen blir hengende på «Lagrer …», og den prøver igjen når du åpner appen på nytt.
 
+**Småfeil**
+- Fremgang: Dagnavnene ved treningskalenderen sto én rad for høyt, så «Ons» sto ved tirsdag. Nå står de ved riktig dag.
+- Mobil: «Logg ut» ble delt på to linjer, og navnet på appen ble kuttet. Er det for trangt, flyttes knappene nå ned under navnet.
+
 ## Fredag 13. november 2026
 
 **Økta**

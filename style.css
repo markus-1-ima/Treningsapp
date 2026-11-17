@@ -450,7 +450,7 @@ textarea.inp.note { min-height: 64px; padding: 10px; resize: vertical; line-heig
 @media (max-width: 600px) { .stats4 { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 16px; } }
 .heatwrap { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; }
 .heatdays { display: grid; grid-template-rows: 16px repeat(7, 1fr); gap: 3px; font-size: 11px; color: var(--muted); }
-.heatdays span:first-child { grid-row: 2; }
+.heatdays::before { content: ""; }                            /* tom celle i overskriftsraden, så Man–Søn havner i rad 2–8 */
 .heatdays span { line-height: 1; align-self: center; }
 .heatmain { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .heatmonths { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; height: 13px; font-size: 11px; color: var(--muted); }
@@ -697,3 +697,7 @@ a.btn { text-decoration: none; }
   .rest-chips .chip { min-height: 36px; padding: 0 10px; }
 }
 .totline { margin: -4px 2px 0; }
+#logout { white-space: nowrap; flex: none; }
+/* Er det ikke plass til navnet, tema og «Logg ut» på én linje, flyttes knappene ned under navnet */
+.top { flex-wrap: wrap; row-gap: 10px; }
+.top-right { margin-left: auto; }
